@@ -1,0 +1,47 @@
+{
+  "service": "erlan.documents",
+  "version": "D0",
+  "description": "Documento nativo con contenido UTF-8, propiedades de pagina, revision y vista en el lienzo comun",
+  "catalog_usage": "Contrato de referencia; el adaptador nativo usa operaciones estaticas. No hay descubrimiento dinamico ni carga de este JSON por el modelo en D0.",
+  "route": {"owner": "system", "transport": "capability IPC", "model_send_slot": 8, "model_receive_slot": 9},
+  "intent": {"draft_examples": ["Redacta un informe breve sobre energia solar", "Escribe una carta de presentacion"], "setting_example": "Pon arriba 2 cm, abajo 3, izquierda 2.5 y derecha 4", "requires_active_document_for_settings": true},
+  "wire": {
+    "magic": "DOC1 little-endian u64 0x31434f44",
+    "request_u64_fields": ["magic", "request_id", "opcode", "expected_revision", "a", "b", "c", "d", "payload_length"],
+    "payload_offset": 72, "payload_max_bytes": 184, "response_bytes": 256,
+    "response_fields_by_byte": {"0": "magic", "8": "request_id", "16": "opcode", "24": "status", "32": "receipt", "40": "revision", "48": "width_um", "56": "height_um", "64": "top_um", "72": "bottom_um", "80": "left_inner_um", "88": "right_outer_um", "96": "mirror", "104": "font_id", "112": "font_size_tenths_pt", "120": "text_bytes", "128": "caret_byte_offset", "136": "visible_page", "144": "title_bytes", "152": "editing", "160": "page_count", "168": "undo_count", "176": "read_length", "184": "read_payload"},
+    "ids": "Positive and strictly increasing per service lifetime. Valid IDs are consumed even on rejected requests.",
+    "revision": "Required for all requests except inspect, read_text and read_title. Text/style mutations and undo increment it; page/caret/edit-mode changes do not."
+  },
+  "operations": [
+    {"opcode": 0, "name": "inspect", "effect": "read", "returns": "revision, page properties, lengths, cursor, page count, undo count"},
+    {"opcode": 1, "name": "new", "effect": "mutate", "template": "A4, 25 mm margins, Serif 11 pt, blank body"},
+    {"opcode": 2, "name": "set_title", "effect": "mutate", "payload": "UTF-8, 1..96 bytes, no controls"},
+    {"opcode": 3, "name": "append_paragraph", "effect": "mutate", "payload": "UTF-8, 1..184 bytes"},
+    {"opcode": 4, "name": "set_margins", "effect": "mutate", "a": "top_um", "b": "bottom_um", "c": "left_inner_um", "d": "right_outer_um"},
+    {"opcode": 5, "name": "set_paper", "effect": "mutate", "a": "width_um", "b": "height_um"},
+    {"opcode": 6, "name": "set_font", "effect": "mutate", "a": "font_id: 0 Serif, 1 Sans", "b": "font_size_tenths_pt: 80..240, multiple of 5"},
+    {"opcode": 7, "name": "set_mirrored", "effect": "mutate", "a": "0 or 1; swap left/right on even pages"},
+    {"opcode": 8, "name": "undo", "effect": "mutate", "history": "four previous content/style states"},
+    {"opcode": 9, "name": "show_page", "effect": "view", "a": "1..page_count"},
+    {"opcode": 10, "name": "close_view", "effect": "view", "preserves_document": true},
+    {"opcode": 11, "name": "export_snapshot", "effect": "serial", "result": "ELD1 bytes in bounded hexadecimal frames with FNV-1a64 checksum; host packages external formats"},
+    {"opcode": 12, "name": "begin_replace_text", "effect": "transaction", "constraint": "one upload; records current revision"},
+    {"opcode": 13, "name": "write_text_chunk", "effect": "transaction", "a": "exact next byte offset", "payload": "0..184 bytes; may split UTF-8 scalar"},
+    {"opcode": 14, "name": "commit_replace_text", "effect": "mutate", "constraint": "same revision, valid complete UTF-8, capacity and view validated; one undo state"},
+    {"opcode": 15, "name": "abort_replace_text", "effect": "transaction"},
+    {"opcode": 16, "name": "read_text", "effect": "read", "a": "byte offset", "result": "up to 72 raw bytes; concatenate before UTF-8 decoding"},
+    {"opcode": 17, "name": "insert_at_caret", "effect": "mutate", "payload": "valid UTF-8; LF paragraph and FF page break allowed"},
+    {"opcode": 18, "name": "backspace", "effect": "mutate", "unit": "previous UTF-8 scalar"},
+    {"opcode": 19, "name": "move_caret", "effect": "view", "a": "0 left, 1 right, 2 start, 3 end"},
+    {"opcode": 20, "name": "set_edit_mode", "effect": "view", "a": "0 or 1"},
+    {"opcode": 21, "name": "read_title", "effect": "read", "a": "byte offset", "result": "up to 72 raw bytes"}
+  ],
+  "status": {"0": "ok", "1": "invalid request length", "2": "invalid magic or payload length", "3": "replayed or zero request ID", "4": "unknown operation", "5": "invalid property or text", "6": "capacity exceeded", "7": "stale revision or invalid upload state", "8": "no undo state", "9": "view rejected; document preserved"},
+  "snapshot": {
+    "magic": "ELD1 little-endian u64 0x31444c45",
+    "header_u64_fields": ["magic", "revision", "width_um", "height_um", "top_um", "bottom_um", "left_inner_um", "right_outer_um", "mirror", "font_id", "font_size_tenths_pt", "text_bytes", "caret_byte_offset", "visible_page", "title_bytes", "editing"],
+    "title_offset": 128, "title_capacity": 96, "text_offset": 224, "text_capacity": 16384
+  },
+  "limits": {"documents": 1, "body_bytes": 16384, "pages": 32, "lines": 1024, "undo_states": 4, "draft_tokens": 256, "persistent_guest_storage": false, "native_external_format_writers": false}
+}

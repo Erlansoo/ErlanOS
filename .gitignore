@@ -1,0 +1,25 @@
+build/
+esp/
+third_party/limine/
+*.o
+*.elf
+*.iso
+__pycache__/
+models/
+output/documentos/
+data/
+
+# configuracion local de cada asistente (hooks, permisos): no se comparte
+.claude/settings.local.json
+.codex/
+
+# lanzador compilado con halo/lanzador/construir.ps1
+Halo.exe
+
+# estado por proyecto que escriben el Halo y sus motores (actual.json, chats.json, historial)
+.halo/
+
+
+# derivados de la documentación de cada proyecto (LaTeX y figuras exportadas por kicad-cli)
+**/docs/.build/
+halo/proyectos/*/docs/figuras/

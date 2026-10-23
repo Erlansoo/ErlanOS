@@ -1,0 +1,79 @@
+// Original, bounded reference programs. No firmware or NVIDIA driver code.
+// Compiled by the installed driver's JIT for a laboratory comparison.
+.version 6.4
+.target sm_61
+.address_size 64
+
+.visible .entry vector_add(
+    .param .u64 A, .param .u64 B, .param .u64 C, .param .u32 N)
+{
+    .reg .pred %p;
+    .reg .b32 %r<6>;
+    .reg .b64 %d<8>;
+    .reg .f32 %f<4>;
+    ld.param.u64 %d1, [A];
+    ld.param.u64 %d2, [B];
+    ld.param.u64 %d3, [C];
+    ld.param.u32 %r1, [N];
+    mov.u32 %r2, %ctaid.x;
+    mov.u32 %r3, %ntid.x;
+    mov.u32 %r4, %tid.x;
+    mad.lo.u32 %r5, %r2, %r3, %r4;
+    setp.ge.u32 %p, %r5, %r1;
+    @%p bra V_DONE;
+    mul.wide.u32 %d4, %r5, 4;
+    add.u64 %d5, %d1, %d4;
+    add.u64 %d6, %d2, %d4;
+    add.u64 %d7, %d3, %d4;
+    ld.global.f32 %f1, [%d5];
+    ld.global.f32 %f2, [%d6];
+    add.rn.f32 %f3, %f1, %f2;
+    st.global.f32 [%d7], %f3;
+V_DONE:
+    ret;
+}
+
+.visible .entry matrix_mul(
+    .param .u64 A, .param .u64 B, .param .u64 C, .param .u32 N)
+{
+    .reg .pred %p;
+    .reg .b32 %r<15>;
+    .reg .b64 %d<10>;
+    .reg .f32 %f<5>;
+    ld.param.u64 %d1, [A];
+    ld.param.u64 %d2, [B];
+    ld.param.u64 %d3, [C];
+    ld.param.u32 %r1, [N];
+    mov.u32 %r2, %ctaid.x;
+    mov.u32 %r3, %ntid.x;
+    mov.u32 %r4, %tid.x;
+    mad.lo.u32 %r5, %r2, %r3, %r4;
+    mul.lo.u32 %r6, %r1, %r1;
+    setp.ge.u32 %p, %r5, %r6;
+    @%p bra M_DONE;
+    div.u32 %r7, %r5, %r1;
+    rem.u32 %r8, %r5, %r1;
+    mov.u32 %r9, 0;
+    mov.f32 %f4, 0f00000000;
+M_LOOP:
+    setp.ge.u32 %p, %r9, %r1;
+    @%p bra M_STORE;
+    mad.lo.u32 %r10, %r7, %r1, %r9;
+    mad.lo.u32 %r11, %r9, %r1, %r8;
+    mul.wide.u32 %d4, %r10, 4;
+    mul.wide.u32 %d5, %r11, 4;
+    add.u64 %d6, %d1, %d4;
+    add.u64 %d7, %d2, %d5;
+    ld.global.f32 %f1, [%d6];
+    ld.global.f32 %f2, [%d7];
+    mul.rn.f32 %f3, %f1, %f2;
+    add.rn.f32 %f4, %f4, %f3;
+    add.u32 %r9, %r9, 1;
+    bra M_LOOP;
+M_STORE:
+    mul.wide.u32 %d8, %r5, 4;
+    add.u64 %d9, %d3, %d8;
+    st.global.f32 [%d9], %f4;
+M_DONE:
+    ret;
+}

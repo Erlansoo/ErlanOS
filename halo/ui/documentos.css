@@ -1,0 +1,80 @@
+/* ------------------------------------------------ documentos del proyecto */
+/* Leyendo documentos, el panel derecho del esquemático sobra y la bitácora se aparta a la derecha. */
+body.documentando #panel { display: none; }
+body.documentando #lienzo { right: 0; }
+body.documentando #bitacora { left: auto; right: 24px; width: min(420px, 34vw); max-height: 26vh; }
+#documentos { position: absolute; inset: 0; display: grid; grid-template-columns: 300px 1fr; overflow: hidden; color: var(--texto); }
+.doc-lateral { display: flex; flex-direction: column; gap: 14px; padding: 16px 14px 16px 24px; overflow-y: auto; border-right: 1px solid var(--borde); }
+.doc-lateral small, .doc-barra small { display: block; letter-spacing: 0.14em; font-size: 10.5px; color: var(--acento); text-transform: uppercase; margin-bottom: 6px; }
+#doc-etapas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+#doc-etapas li { display: grid; grid-template-columns: 10px 1fr; gap: 8px; align-items: baseline; font-size: 12.5px; line-height: 1.4; }
+#doc-etapas li span.punto { width: 8px; height: 8px; border-radius: 50%; background: #5b4a3a; transform: translateY(-1px); }
+#doc-etapas li[data-estado="en curso"] span.punto { background: var(--acento); }
+#doc-etapas li[data-estado="lista"] span.punto { background: #8fcf9c; }
+#doc-etapas li em { color: var(--tenue); font-style: normal; font-size: 11.5px; display: block; }
+#doc-siguiente { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: rgba(232, 192, 128, 0.1); border: 1px solid var(--borde); font-size: 12.5px; line-height: 1.45; }
+#doc-siguiente b { color: var(--acento); font-weight: 600; }
+.doc-lateral .botones { display: flex; gap: 6px; flex-wrap: wrap; }
+.doc-lateral .botones button, .doc-barra .botones button {
+  padding: 4px 10px; border-radius: 7px; border: 1px solid var(--borde);
+  background: rgba(232, 192, 128, 0.07); color: var(--texto); font: inherit; font-size: 12px; cursor: pointer;
+}
+.doc-lateral .botones button:hover, .doc-barra .botones button:hover { border-color: var(--acento); }
+.doc-barra .botones button:disabled { opacity: 0.4; cursor: default; }
+#doc-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+#doc-lista button {
+  width: 100%; text-align: left; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
+  padding: 6px 10px; border-radius: 8px; border: 1px solid transparent; background: rgba(232, 192, 128, 0.04);
+  color: var(--texto); font: inherit; font-size: 12.5px; cursor: pointer;
+}
+#doc-lista button:hover { border-color: var(--borde); }
+#doc-lista button[aria-current="true"] { background: rgba(232, 192, 128, 0.14); border-color: rgba(232, 192, 128, 0.4); }
+#doc-lista button small { display: inline; margin: 0; letter-spacing: 0; text-transform: none; color: var(--tenue); font-family: var(--mono); font-size: 10.5px; }
+#doc-lista button .alerta { color: #e8c080; }
+#doc-lista:empty::after { content: "Todavía no hay documentos: crea la memoria o el informe."; color: var(--tenue); font-size: 12px; }
+
+.doc-principal { display: flex; flex-direction: column; overflow: hidden; }
+.doc-barra { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 24px 8px; flex-wrap: wrap; }
+.doc-barra h2 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 0.02em; font-family: var(--mono); }
+.doc-barra .botones { display: flex; gap: 6px; flex-wrap: wrap; }
+#doc-estado { margin: 0 24px 6px; min-height: 16px; font-size: 12px; color: var(--tenue); }
+#doc-estado.error { color: #eaa089; }
+#doc-vacio { margin: auto; text-align: center; color: var(--tenue); max-width: 420px; line-height: 1.5; font-size: 13.5px; }
+#doc-vacio strong { display: block; color: var(--texto); font-size: 18px; margin-bottom: 6px; }
+#doc-pdf { flex: 1; width: 100%; border: none; background: #fff; }
+#doc-editor {
+  flex: 1; margin: 0 24px 20px; padding: 14px 16px; resize: none; border-radius: 10px; border: 1px solid var(--borde);
+  background: rgba(10, 6, 4, 0.55); color: var(--texto); font-family: var(--mono); font-size: 12.5px; line-height: 1.5; tab-size: 2;
+}
+#doc-editor:focus { outline: none; border-color: rgba(232, 192, 128, 0.5); }
+
+/* la hoja: fondo claro del papel del Halo, texto oscuro */
+.doc-hoja {
+  flex: 1; overflow-y: auto; margin: 0 auto 20px; width: min(900px, calc(100% - 48px)); padding: 44px 56px 60px; border-radius: 6px;
+  background: var(--hoja); color: #2b2118; font-family: "Segoe UI", system-ui, sans-serif; font-size: 14.5px; line-height: 1.6;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+.doc-hoja h1 { font-size: 26px; margin: 0 0 6px; color: #3a2416; }
+.doc-hoja h2 { font-size: 19px; margin: 26px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #d8c9ad; color: #3a2416; }
+.doc-hoja h3 { font-size: 15.5px; margin: 18px 0 6px; color: #5b3a22; }
+.doc-hoja p { margin: 8px 0; }
+.doc-hoja a { color: #7d2e1c; }
+.doc-hoja code { font-family: var(--mono); font-size: 12.5px; background: #e9dfc9; padding: 1px 4px; border-radius: 3px; }
+.doc-hoja pre { background: #2b2118; color: #ecdfcf; padding: 10px 14px; border-radius: 8px; overflow-x: auto; }
+.doc-hoja pre code { background: none; color: inherit; padding: 0; }
+.doc-hoja blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid #b9a58a; color: #5b4a3a; }
+.doc-hoja table { border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+.doc-hoja th, .doc-hoja td { border: 1px solid #d8c9ad; padding: 4px 10px; }
+.doc-hoja th { background: #ebe1cc; }
+.doc-hoja img { max-width: 100%; height: auto; display: block; margin: 12px auto; background: #fff; border: 1px solid #d8c9ad; border-radius: 4px; }
+.doc-hoja hr { border: none; border-top: 1px solid #d8c9ad; margin: 20px 0; }
+.doc-seccion { position: relative; margin: 14px 0; padding: 6px 16px 10px; border-left: 3px solid #9ec2a6; background: rgba(158, 194, 166, 0.08); border-radius: 0 6px 6px 0; }
+.doc-seccion.desactualizada { border-left-color: #d9a441; background: rgba(217, 164, 65, 0.1); }
+.doc-marca { float: right; margin: 2px 0 0 12px; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #6d7d70; }
+.doc-seccion.desactualizada .doc-marca { color: #9c7018; }
+.doc-aviso { display: inline-block; margin: 4px 0; padding: 3px 9px; border-radius: 999px; background: #d9a441; color: #2b2118; font-size: 11.5px; font-weight: 600; }
+.doc-hoja h2:first-child, .doc-seccion h2 { margin-top: 6px; }
+
+@media (max-width: 1100px) { #documentos { grid-template-columns: 240px 1fr; } .doc-hoja { padding: 28px 30px 40px; } }
+#doc-solo-caja { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--tenue); cursor: pointer; }
+#doc-solo-caja input { margin: 0; accent-color: var(--acento); }

@@ -1,0 +1,19 @@
+#ficha-bloque { color: #ede3d5; background: #292622; border: 1px solid #74604c; border-radius: 18px; width: min(720px, 88vw); max-height: 84vh; padding: 0; box-shadow: 0 24px 100px #0009; }
+#ficha-bloque::backdrop { background: #17130f99; backdrop-filter: blur(4px); }
+.bloque-cabecera { display: flex; align-items: start; justify-content: space-between; gap: 24px; padding: 24px 28px 18px; border-bottom: 1px solid #ffffff18; }
+.bloque-cabecera small { color: #c5a47d; letter-spacing: .12em; }
+#bloque-titulo { margin: 8px 0 0; font-size: 23px; }
+#bloque-cerrar { padding: 8px 12px; }
+#bloque-contenido { padding: 4px 28px 26px; line-height: 1.65; overflow-wrap: anywhere; }
+#bloque-contenido h3 { color: #dfc2a0; font-size: 15px; margin: 24px 0 8px; }
+#bloque-contenido li { margin-bottom: 8px; }
+#bloque-contenido a { color: #b9d8e7; }
+#bloque-contenido small { display: block; color: #b8afa3; }
+.bloque-vigencia, .bloque-nota { color: #b8afa3; font-size: 12px; }
+.bloque-componentes { font-family: monospace; font-size: 12px; }
+.bloque-prueba { background: #ffffff06; border: 1px solid #ffffff12; border-radius: 10px; padding: 14px; margin: 10px 0; }
+.bloque-sello { display: inline-block; margin-left: 12px; color: #e4bf86; font-size: 12px; }
+.grupo-bloque:focus-visible { outline: 1px solid #ba8d57; }
+#bloques-lista { width: 100%; margin-bottom: 10px; padding: 7px; border-radius: 6px; color: inherit; background: #ffffff80; border: 1px solid #9a7f6066; }
+#hoja.editable .grupo-bloque[data-virtual] .agarre-bloque,
+#hoja.editable .grupo-bloque[data-virtual] .titulo-bloque { cursor: help; }

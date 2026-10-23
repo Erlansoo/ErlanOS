@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Halo</title>
+<link rel="stylesheet" href="/halo.css">
+<link rel="stylesheet" href="/simulacion.css">
+<link rel="stylesheet" href="/bloques.css">
+<link rel="stylesheet" href="/espacio3d.css">
+<link rel="stylesheet" href="/chat.css">
+<link rel="stylesheet" href="/documentos.css">
+<link rel="icon" type="image/png" href="/halo.png">
+<script type="importmap">{"imports":{"three":"/vendor/three/three.module.js"}}</script>
+</head>
+<body>
+<div id="fondo" aria-hidden="true"></div>
+
+<nav id="proyectos" aria-label="Proyectos abiertos">
+  <button id="chat-alternar" title="Mostrar u ocultar el chat de Claude Code de este proyecto" aria-pressed="false" aria-controls="chat">Chat</button>
+  <div id="proyectos-lista"></div>
+  <button id="proyectos-todas" hidden aria-haspopup="true" aria-expanded="false" title="Ver todas las pestañas abiertas">▾</button>
+  <div id="proyectos-menu" hidden role="menu" aria-label="Todas las pestañas">
+    <input id="proyectos-filtro" placeholder="Buscar pestaña…" spellcheck="false" autocomplete="off">
+    <div id="proyectos-menu-lista"></div>
+  </div>
+  <button id="proyecto-abrir" title="Abrir un proyecto en una pestaña nueva">+</button>
+</nav>
+<dialog id="dialogo-proyecto" aria-labelledby="dialogo-proyecto-titulo">
+  <form id="form-proyecto">
+    <small>PESTAÑA NUEVA</small>
+    <h2 id="dialogo-proyecto-titulo">Abrir un proyecto</h2>
+    <p>La carpeta que contiene el esquemático o la placa de KiCad.</p>
+    <label>Carpeta<input id="proyecto-carpeta" placeholder="C:\ruta\a\mi_proyecto" spellcheck="false" autocomplete="off"></label>
+    <div id="proyectos-recientes"></div>
+    <p id="proyecto-aviso" role="status"></p>
+    <div class="botones"><button type="button" id="proyecto-cancelar">Cancelar</button><button type="submit">Abrir</button></div>
+  </form>
+</dialog>
+
+<div id="cargando" hidden role="status" aria-live="polite">
+  <div class="puntos" aria-hidden="true"><i></i><i></i><i></i></div>
+  <p id="cargando-nombre">Abriendo…</p>
+  <button id="cargando-reintentar" type="button" hidden>El servidor no responde · Reintentar</button>
+</div>
+
+<aside id="chat" hidden aria-label="Chat de Claude Code del proyecto">
+  <header id="chat-cabecera">
+    <div id="chat-lista" role="tablist" aria-label="Chats de este proyecto"></div>
+    <button id="chat-nuevo" title="Crear otro chat en este proyecto">+</button>
+  </header>
+  <div id="chat-opciones">
+    <select id="chat-modelo" title="Modelo"></select>
+    <select id="chat-esfuerzo" title="Esfuerzo de razonamiento"></select>
+    <select id="chat-permisos" title="Cómo se piden los permisos"></select>
+    <div class="botones">
+      <button id="chat-bifurcar" title="Abrir una rama que continúa esta conversación sin tocarla">Bifurcar</button>
+      <button id="chat-consola" title="Seguir este chat en una consola de Claude Code (para órdenes interactivas)">Consola</button>
+      <button id="chat-remoto" title="Abrir este chat en modo Remote Control para continuarlo desde la app del celular">Remoto</button>
+      <button id="chat-quitar" title="Quitar el chat de la lista (la conversación sigue guardada en Claude Code)">Quitar</button>
+    </div>
+    <button type="button" id="chat-sesion" title="Identificador de la sesión de Claude Code; pulsa para copiarlo. Desde cualquier terminal: claude --resume <id>"></button>
+  </div>
+  <p id="chat-aviso" role="status" aria-live="polite" hidden></p>
+  <div id="chat-mensajes" role="log" aria-live="polite"></div>
+  <form id="chat-redactor">
+    <textarea id="chat-texto" rows="2" maxlength="20000" placeholder="Escribe a Claude Code… (Enter envía, Shift+Enter salta de línea)"></textarea>
+    <div id="chat-adjuntos" hidden></div>
+    <div class="botones">
+      <button type="button" id="chat-imagen" title="Adjuntar una imagen (o pega una captura con Ctrl+V)">Imagen</button>
+      <input type="file" id="chat-archivo" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden>
+      <label id="chat-detalle-caja" title="Muestra u oculta las llamadas a herramientas y sus resultados"><input type="checkbox" id="chat-detalle" checked> Detalle</label>
+      <button type="button" id="chat-detener" hidden>Detener</button><button type="submit" id="chat-enviar">Enviar</button>
+    </div>
+  </form>
+</aside>
+<dialog id="dialogo-chat" aria-labelledby="dialogo-chat-titulo">
+  <form id="form-chat">
+    <small>CHAT</small>
+    <h2 id="dialogo-chat-titulo">Nombre del chat</h2>
+    <label>Nombre<input id="chat-nombre" maxlength="80" autocomplete="off" spellcheck="false"></label>
+    <div class="botones"><button type="button" id="chat-nombre-cancelar">Cancelar</button><button type="submit">Guardar</button></div>
+  </form>
+</dialog>
+
+<header id="cabecera">
+  <nav id="etapas" aria-label="Etapas del trabajo">
+    <button class="etapa" data-etapa="documentos">Documentos</button>
+    <button class="etapa" data-etapa="esquematico" disabled>Esquemático</button>
+    <button class="etapa" data-etapa="simulacion">Simulación</button>
+    <button class="etapa" data-etapa="pcb" disabled>PCB</button>
+    <button class="etapa" data-etapa="3d" disabled>PCB · 3D</button>
+    <button class="etapa" data-etapa="fabricacion" disabled>Fabricación</button>
+    <button class="etapa" data-etapa="espacio3d">Crear en 3D</button>
+  </nav>
+  <div id="halo" data-estado="reposo" role="status" aria-live="polite">
+    <span></span><span></span><span></span>
+    <em id="halo-texto"></em>
+  </div>
+  <div id="conexion" class="desconectado">sin enlace</div>
+</header>
+
+<main id="lienzo">
+  <svg id="hoja" class="vista" xmlns="http://www.w3.org/2000/svg" aria-label="Lienzo del esquemático"></svg>
+  <svg id="placa" class="vista" xmlns="http://www.w3.org/2000/svg" aria-label="Lienzo de la placa" hidden></svg>
+  <div id="vista3d" class="vista" hidden></div>
+  <section id="espacio3d" class="vista" hidden aria-label="Espacio de creación 3D">
+    <div id="e3-canvas" aria-label="Visor 3D: arrastra para girar y usa la rueda para acercar"></div>
+    <div class="e3-barra">
+      <div><small>ESPACIO 3D</small><select id="e3-project" aria-label="Proyecto 3D"><option value="">Sin proyecto</option></select></div>
+      <button id="e3-new">Nuevo proyecto</button><span id="e3-state" role="status">Conectando motores…</span>
+    </div>
+    <aside class="e3-panel" aria-label="Objetos y propiedades">
+      <header><h2>En este espacio</h2><span id="e3-count">0 objetos</span></header>
+      <div id="e3-objects"></div>
+      <div id="e3-details"><p class="e3-muted">Selecciona una pieza para consultar sus medidas.</p></div>
+      <details id="e3-downloads"><summary>Guardar una copia / exportar</summary><div id="e3-files"></div></details>
+    </aside>
+    <div class="e3-vista-tools"><button id="e3-fit">Encuadrar</button><button id="e3-top">Desde arriba</button><button id="e3-wire">Aristas</button><button id="e3-section">Sección</button><button id="e3-undo" disabled>Deshacer</button><button id="e3-redo" disabled>Rehacer</button></div>
+    <div id="e3-empty"><small>UN ESPACIO PARA TUS IDEAS</small><h1>De la intención a la forma.</h1><p>Crea un proyecto de mallas, CAD o ambos.<br>La geometría aparecerá aquí conforme se construye.</p><div><button data-e3-demo="cad">Probar diseño CAD</button><button data-e3-demo="malla">Probar mallas</button><button data-e3-demo="mixto">Ver ambos juntos</button></div></div>
+    <div class="e3-bottom">
+      <div id="e3-progress" hidden><span id="e3-progress-text"></span><button id="e3-cancel">Detener</button></div>
+      <p id="e3-message" role="status" aria-live="polite"></p>
+    </div>
+    <dialog id="e3-new-dialog"><form id="e3-new-form"><small>NUEVO ESPACIO</small><h2>¿Qué vas a crear?</h2><label>Nombre del proyecto<input id="e3-new-name" maxlength="100" required placeholder="Mi diseño 3D"></label><div><button type="button" id="e3-new-cancel">Cancelar</button><button type="submit">Crear proyecto</button></div></form></dialog>
+  </section>
+  <section id="documentos" class="vista" hidden aria-label="Documentación del proyecto">
+    <aside class="doc-lateral">
+      <div><small>Guía de etapas</small><ol id="doc-etapas"></ol><p id="doc-siguiente"></p></div>
+      <div><small>Documentos del proyecto</small><div class="botones"><button id="doc-memoria" title="Memoria en Markdown con secciones generadas desde el proyecto">+ Memoria</button><button id="doc-informe" title="Informe en LaTeX con esquemático, placa y medidas; se compila con MiKTeX">+ Informe LaTeX</button></div></div>
+      <ul id="doc-lista"></ul>
+    </aside>
+    <div class="doc-principal">
+      <header class="doc-barra"><h2 id="doc-titulo">—</h2><div class="botones"><button id="doc-actualizar" hidden title="Regenera las secciones marcadas con el estado actual; tu texto no se toca">Actualizar secciones</button><label id="doc-solo-caja" hidden title="Regenera las secciones marcadas en cuanto el proyecto cambie, sin que tengas que pulsar nada"><input type="checkbox" id="doc-solo"> al vuelo</label><button id="doc-compilar" hidden>Compilar PDF</button><button id="doc-verpdf" hidden>Ver PDF</button><button id="doc-docx" hidden title="Convierte con pandoc a Word">Exportar DOCX</button><button id="doc-editar" hidden>Editar</button><button id="doc-guardar" hidden>Guardar</button></div></header>
+      <p id="doc-estado" role="status" aria-live="polite"></p>
+      <article id="doc-hoja" class="doc-hoja" hidden></article>
+      <textarea id="doc-editor" hidden spellcheck="false" aria-label="Texto del documento"></textarea>
+      <iframe id="doc-pdf" hidden title="Documento PDF"></iframe>
+      <div id="doc-vacio"><strong>Documentación viva</strong>Cada proyecto guarda su memoria y su informe en la carpeta <code>docs</code>. Las secciones generadas se marcan cuando el esquemático, la simulación, la placa o la fabricación cambian.</div>
+    </div>
+  </section>
+  <section id="simulacion" class="vista" hidden aria-label="Simulación eléctrica">
+    <div class="sim-encabezado"><div><small>LABORATORIO ELÉCTRICO</small><h1>Del circuito a su comportamiento</h1></div><span id="sim-motor">ngspice</span></div>
+    <div class="sim-barra">
+      <label>Banco de pruebas <select id="sim-banco"><option value="proyecto" selected>Proyecto abierto</option><option value="rc">Ejemplo RC · transitorio</option><option value="rc_ac">Ejemplo RC · frecuencia</option><option value="rc_op">Ejemplo RC · punto de operación</option><option value="555">Ejemplo 555 · temporización ideal</option></select></label>
+      <button id="sim-ejecutar">Simular</button><button id="sim-cancelar" disabled>Detener</button>
+    </div>
+    <p id="sim-estado" role="status" aria-live="polite">Elige un ejemplo o configura el banco del proyecto.</p>
+    <div id="sim-historial"><label>Ejecución <select id="sim-trabajos"><option value="">Sin ejecuciones</option></select></label><label>Comparar con <select id="sim-base"><option value="">Sin comparación</option></select></label><button id="sim-comparar">Comparar</button></div>
+    <div id="sim-resultado"></div>
+    <details id="sim-config-panel"><summary>Configurar modelos, fuentes y mediciones del proyecto</summary>
+      <p>Los valores se expresan en unidades SI. Cada componente necesita un modelo y el orden de sus pines. La plantilla incluye los nombres de redes exportados por KiCad.</p>
+      <div class="sim-barra"><button id="sim-plantilla">Leer conexiones y crear plantilla</button><button id="sim-guardar">Guardar configuración</button></div>
+      <p id="sim-redes"></p><label class="sim-config-label" for="sim-config">Configuración JSON</label><textarea id="sim-config" spellcheck="false" aria-label="Configuración de simulación JSON" placeholder="Carga una plantilla para comenzar"></textarea>
+    </details>
+  </section>
+  <div id="vacio">
+    <strong>Sin proyecto abierto</strong>
+    <span>Pulsa + para abrir la carpeta de un proyecto de KiCad. Cuando la IA trabaje en uno, su pestaña se abrirá sola.</span>
+  </div>
+  <div id="controles">
+    <button id="ajustar" title="Ajustar a la vista">Ajustar</button>
+  </div>
+</main>
+
+<aside id="panel">
+  <h2 id="panel-titulo">ESQUEMÁTICO</h2>
+  <p id="proyecto">—</p>
+  <dl id="datos"></dl>
+  <section id="bloques-navegacion" hidden>
+    <h3>Bloques del circuito</h3>
+    <select id="bloques-lista" aria-label="Elegir bloque"></select>
+    <div class="botones"><button id="bloques-acercar">Acercar</button><button id="bloques-ficha">Ficha</button></div>
+  </section>
+  <div id="capas" hidden aria-label="Capas de cobre visibles"></div>
+  <h3>Verificación KiCad</h3>
+  <dl id="verificacion"><dt>Estado</dt><dd>sin verificar</dd></dl>
+  <div id="herramientas" hidden>
+    <h3>Tus cambios</h3>
+    <p id="seleccion">Arrastra componentes, etiquetas, textos o bloques por su borde</p>
+    <div class="botones">
+      <input id="buscar" type="search" list="buscar-lista" placeholder="Buscar R68, F6, U2… y Enter" autocomplete="off"
+             title="Escribe una referencia; elige en la lista o pulsa Enter y la vista va al componente">
+      <datalist id="buscar-lista"></datalist>
+      <button id="verificar" title="KiCad revisa que tus cambios no rompan conexiones">Verificar</button>
+      <button id="deshacer" title="Deshacer tu último cambio (Ctrl+Z)">Deshacer</button>
+      <button id="cablear" title="Trazar un cable a mano: clic en cada esquina, doble clic o Enter termina, Escape cancela (tecla W)" hidden>Cablear</button>
+      <button id="serigrafia" title="Aparta las referencias y rótulos de serigrafía que KiCad marque encimados; se puede deshacer" hidden>Serigrafía</button>
+    </div>
+  </div>
+  <section id="fabricacion" hidden>
+    <h3>Fabricación</h3>
+    <button id="fab-preparar">Preparar para JLCPCB</button>
+    <p id="fab-estado" role="status" aria-live="polite">PCB sin montaje · Gerbers y taladros</p>
+    <div id="fab-resultado"></div>
+  </section>
+</aside>
+<div id="aviso" role="status" aria-live="polite"></div>
+
+<section id="bitacora" aria-label="Lo que se está haciendo">
+  <h3>Lo que se está haciendo</h3>
+  <ol id="eventos"></ol>
+</section>
+
+<script src="/esquematico.js"></script>
+<dialog id="ficha-bloque" aria-labelledby="bloque-titulo">
+  <header class="bloque-cabecera"><div><small>MEMORIA DEL DISEÑO</small><h2 id="bloque-titulo">Ficha del bloque</h2></div><button id="bloque-cerrar" aria-label="Cerrar ficha">Cerrar</button></header>
+  <div id="bloque-contenido"></div>
+</dialog>
+<script src="/bloques.js"></script>
+<script src="/pcb.js"></script>
+<script src="/simulacion.js"></script>
+<script src="/fabricacion.js"></script>
+<script type="module" src="/espacio3d.js"></script>
+<script src="/chat.js"></script>
+<script src="/documentos.js"></script>
+<script src="/halo.js"></script>
+</body>
+</html>

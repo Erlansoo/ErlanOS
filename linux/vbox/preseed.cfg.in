@@ -1,0 +1,76 @@
+# ErlanOS LB0: Debian 13 mínima y desatendida (ver docs/LINUX-BASE.md).
+# Plantilla: linux/vbox/crear_vm.ps1 sustituye @@ERLAN_SSH_KEY@@ y
+# @@ERLAN_PASSWORD_HASH@@ con valores de build/linux, que nunca van a git.
+
+### Idioma, país y teclado (Bolivia, teclado latinoamericano)
+d-i debian-installer/language string es
+d-i debian-installer/country string BO
+d-i debian-installer/locale string es_BO.UTF-8
+d-i localechooser/supported-locales multiselect en_US.UTF-8
+d-i keyboard-configuration/xkb-keymap select latam
+
+### Red
+d-i netcfg/choose_interface select auto
+d-i netcfg/get_hostname string erlanos
+d-i netcfg/get_domain string local
+d-i netcfg/hostname string erlanos
+d-i hw-detect/load_firmware boolean true
+
+### Réplica oficial
+d-i mirror/country string manual
+d-i mirror/http/hostname string deb.debian.org
+d-i mirror/http/directory string /debian
+d-i mirror/http/proxy string
+
+### Cuentas: sin root. 'erlan' administra; la IA tendrá usuarios propios sin sudo (LB2).
+d-i passwd/root-login boolean false
+d-i passwd/user-fullname string ErlanOS
+d-i passwd/username string erlan
+d-i passwd/user-uid string 1000
+d-i passwd/user-password-crypted password @@ERLAN_PASSWORD_HASH@@
+
+### Reloj
+d-i clock-setup/utc boolean true
+d-i time/zone string America/La_Paz
+d-i clock-setup/ntp boolean true
+
+### Disco entero de la VM, una sola partición
+d-i partman-auto/disk string /dev/sda
+d-i partman-auto/method string regular
+d-i partman-lvm/device_remove_lvm boolean true
+d-i partman-md/device_remove_md boolean true
+d-i partman-auto/choose_recipe select atomic
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+
+### Paquetes: sin escritorio, sólo SSH y lo necesario para compilar Erlan
+d-i apt-setup/contrib boolean true
+d-i apt-setup/non-free boolean true
+d-i apt-setup/non-free-firmware boolean true
+d-i apt-setup/services-select multiselect security, updates
+tasksel tasksel/first multiselect ssh-server
+d-i pkgsel/include string sudo curl ca-certificates git make clang python3
+d-i pkgsel/install-language-support boolean false
+d-i pkgsel/upgrade select full-upgrade
+d-i pkgsel/update-policy select none
+popularity-contest popularity-contest/participate boolean false
+
+### Arranque: consola serie para dejar evidencia del arranque
+d-i debian-installer/add-kernel-opts string console=tty0 console=ttyS0,115200n8
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/with_other_os boolean false
+d-i grub-installer/bootdev string /dev/sda
+
+### Últimos pasos: llave SSH, sin contraseñas por SSH, marca de hito
+d-i preseed/late_command string \
+    in-target install -d -m 700 -o 1000 -g 1000 /home/erlan/.ssh; \
+    echo '@@ERLAN_SSH_KEY@@' > /target/home/erlan/.ssh/authorized_keys; \
+    in-target chown 1000:1000 /home/erlan/.ssh/authorized_keys; \
+    in-target chmod 600 /home/erlan/.ssh/authorized_keys; \
+    echo 'erlan ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/erlan; \
+    in-target chmod 440 /etc/sudoers.d/erlan; \
+    echo 'PasswordAuthentication no' > /target/etc/ssh/sshd_config.d/erlanos.conf; \
+    echo 'ErlanOS LB0: Debian minima instalada' > /target/etc/erlanos-lb0
+d-i finish-install/reboot_in_progress note

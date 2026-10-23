@@ -1,0 +1,103 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noindentfirst]{babel}
+\usepackage{graphicx,booktabs,longtable,float,geometry}
+\usepackage[hidelinks]{hyperref}
+\geometry{margin=2.5cm}
+
+\title{Parpadeador LED NE555}
+\author{Halo}
+\date{2026-09-20}
+
+\begin{document}
+\maketitle
+
+\section{Resumen}
+
+% Texto libre: este bloque es tuyo; las secciones generadas se actualizan sin tocarlo.
+Este informe recoge el estado del proyecto tal como lo registra el Halo.
+
+% halo:seccion esquematico 4c362327f28d
+\section{Esquemático}
+
+El esquemático \texttt{parpadeo555.kicad\_sch} tiene 9 componentes, [{'uuid': 'aaacfc79-7877-48d6-8dc9-7f418e82d9e7', 'pts': [[43.18, 76.2], [55.88, 76.2]]}, {'uuid': '52f0477a-d7f8-45c1-9727-859ffcd58e48', 'pts': [[55.88, 76.2], [55.88, 73.66]]}, {'uuid': '9b511a9a-ef63-40a9-8eab-420c5aa74692', 'pts': [[48.26, 76.2], [48.26, 73.66]]}, {'uuid': '2a8a6ba2-fb0d-43fb-8f66-673bd194e427', 'pts': [[43.18, 78.74], [55.88, 78.74]]}, {'uuid': '8e82586c-670d-42e9-a7dd-3f0143d0a8e8', 'pts': [[55.88, 78.74], [55.88, 81.28]]}, {'uuid': 'c041a596-02ec-4fd3-b85c-b5b9d2f83d97', 'pts': [[48.26, 78.74], [48.26, 81.28]]}, {'uuid': '3c4b0cad-7232-4327-a91d-df8066cdf0bf', 'pts': [[114.3, 80.01], [114.3, 85.09]]}, {'uuid': 'ce5714c8-47a1-4cd2-bd95-c72896961872', 'pts': [[129.54, 83.82], [114.3, 83.82]]}, {'uuid': '2eeab108-25de-46ee-a5f3-cdbb154f672a', 'pts': [[114.3, 92.71], [114.3, 97.79]]}, {'uuid': 'e55b073c-f6ee-47cc-a52f-15eac5ea85e9', 'pts': [[129.54, 88.9], [124.46, 88.9]]}, {'uuid': '9ae41db2-61cd-409a-ad70-839ecb6bc902', 'pts': [[124.46, 88.9], [124.46, 95.25]]}, {'uuid': 'a18cf12b-4024-4e50-a041-4a7843619f46', 'pts': [[124.46, 95.25], [114.3, 95.25]]}, {'uuid': 'f682c6f9-f4c5-4369-ac5e-d96eec565b68', 'pts': [[129.54, 91.44], [124.46, 91.44]]}, {'uuid': 'bac192f0-af2b-4afe-b887-f4a40ff5926a', 'pts': [[139.7, 76.2], [139.7, 66.04]]}, {'uuid': '2a3059f7-48c4-400e-aac0-bb390646a289', 'pts': [[139.7, 66.04], [167.64, 66.04]]}, {'uuid': 'ebf15d62-903f-456a-bd1d-6b07341e510e', 'pts': [[167.64, 66.04], [167.64, 77.47]]}, {'uuid': 'c9204535-0bb6-4356-ac74-3cce47ec89fc', 'pts': [[114.3, 72.39], [114.3, 69.85]]}, {'uuid': '41d98cac-190e-4647-a75b-c63bc66b2e7b', 'pts': [[129.54, 81.28], [127.0, 81.28]]}, {'uuid': 'b4247719-08eb-40f5-8db2-42c56e778fc3', 'pts': [[127.0, 81.28], [127.0, 78.74]]}, {'uuid': '3f1e6f69-5e99-4d15-9465-eb30cff63fb7', 'pts': [[142.24, 76.2], [142.24, 73.66]]}, {'uuid': '4be7074c-9654-417b-bb9d-896fd8eac2ab', 'pts': [[139.7, 96.52], [139.7, 99.06]]}, {'uuid': '1ec283ea-5c01-4a1a-a1c7-aa1ca3678aef', 'pts': [[114.3, 105.41], [114.3, 107.95]]}, {'uuid': '82c584e1-2821-4bc9-906e-28b4759c49b4', 'pts': [[167.64, 85.09], [167.64, 87.63]]}, {'uuid': '05c5ab96-f4cf-431c-9176-1eaaab900efa', 'pts': [[177.8, 77.47], [177.8, 74.93]]}, {'uuid': '6e162503-f657-41ac-b85c-1dd48acbdaf1', 'pts': [[177.8, 85.09], [177.8, 87.63]]}, {'uuid': '54734e84-25cd-4da8-adc9-9f0fc3b31758', 'pts': [[149.86, 86.36], [152.4, 86.36]]}, {'uuid': '3f1436bf-5a56-438f-9c11-52850ae35eb9', 'pts': [[219.71, 86.36], [214.63, 86.36]]}, {'uuid': '63354c4e-8727-4c3f-ba94-0a0829e97a1c', 'pts': [[227.33, 86.36], [236.22, 86.36]]}, {'uuid': '15ad24c9-685f-4728-837e-6c516e0a54a8', 'pts': [[236.22, 86.36], [236.22, 91.44]]}, {'uuid': '6f4c92a5-c267-4d5d-8641-005419811e17', 'pts': [[236.22, 99.06], [236.22, 101.6]]}] cables y 3 bloques. Verificación de KiCad: ERC: 0 errores, 0 avisos; netlist idéntica a la intención; dibujo: 0 problemas.
+
+\begin{figure}[H]\centering
+\includegraphics[width=\textwidth]{figuras/esquematico.pdf}
+\caption{Esquemático de Parpadeador LED NE555.}\end{figure}
+
+\subsection{Bloques del circuito}
+\begin{itemize}
+  \item \textbf{Entrada de 5 V} (J1)
+  \item \textbf{Temporizador astable NE555} (C1, C2, C3, R1, R2, U1)
+  \item \textbf{Indicador LED} (D1, R3)
+\end{itemize}
+
+\subsection{Componentes}
+\begin{longtable}{lll}\toprule
+Referencia & Valor & Símbolo \\ \midrule
+\endhead
+C1 & 10uF & \texttt{Device:C\_Polarized} \\
+C2 & 10nF & \texttt{Device:C} \\
+C3 & 100nF & \texttt{Device:C} \\
+D1 & LED rojo & \texttt{Device:LED} \\
+J1 & Entrada 5V & \texttt{Connector\_Generic:Conn\_01x02} \\
+R1 & 1k & \texttt{Device:R} \\
+R2 & 68k & \texttt{Device:R} \\
+R3 & 470 & \texttt{Device:R} \\
+U1 & NE555P & \texttt{Timer:NE555P} \\
+\bottomrule\end{longtable}
+
+% halo:fin esquematico
+
+% halo:seccion simulacion d972a90cd266
+\section{Simulación}
+
+\begin{longtable}{llll}\toprule
+Simulación & Análisis & Estado & Criterios \\ \midrule
+\endhead
+555 · temporización astable ideal & tran & completado & cumple \\
+\bottomrule\end{longtable}
+
+\subsection{Medidas}
+\begin{longtable}{llll}\toprule
+Simulación & Medida & Valor & Estado \\ \midrule
+\endhead
+555 · temporización astable ideal & frecuencia & 1.05263 Hz & cumple \\
+\bottomrule\end{longtable}
+
+% halo:fin simulacion
+
+% halo:seccion pcb 38e57feec696
+\section{Placa de circuito impreso}
+
+La placa \texttt{parpadeo555.kicad\_pcb} mide 41.5 $\times$ 27.5 mm, tiene ['F.Cu', 'B.Cu'] capas y está en etapa \emph{ruteada}. Lleva 9 huellas (9 arriba, 0 abajo), 50 tramos de pista y 0 vías. Verificación: DRC: 0 errores, 0 avisos; 0 conexiones pendientes; paridad con el esquemático exacta.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.8\textwidth]{figuras/placa.pdf}
+\caption{Cobre, contorno y serigrafía de la placa.}\end{figure}
+Zonas de cobre: GND en B.Cu.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.7\textwidth]{figuras/3d-1789488973865068000-arriba.png}
+\caption{Vista 3D (arriba).}\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.7\textwidth]{figuras/3d-1789488973865068000-perspectiva.png}
+\caption{Vista 3D (perspectiva).}\end{figure}
+
+% halo:fin pcb
+
+% halo:seccion fabricacion ausente
+\section{Fabricación}
+
+Todavía no se han preparado archivos de fabricación.
+
+% halo:fin fabricacion
+
+\section{Conclusiones}
+
+Pendiente.
+
+\end{document}

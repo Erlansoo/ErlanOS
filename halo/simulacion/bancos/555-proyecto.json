@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "nombre": "555 · temporización astable ideal",
+  "tierra": "GND",
+  "componentes": {
+    "C1": {
+      "tipo": "C",
+      "pines": [
+        "1",
+        "2"
+      ],
+      "valor": 1e-05,
+      "inicial": 0,
+      "valor_esquematico": "10uF"
+    },
+    "C2": {
+      "tipo": "C",
+      "pines": [
+        "1",
+        "2"
+      ],
+      "valor": 1e-08,
+      "valor_esquematico": "10nF"
+    },
+    "C3": {
+      "tipo": "C",
+      "pines": [
+        "1",
+        "2"
+      ],
+      "valor": 1e-07,
+      "valor_esquematico": "100nF"
+    },
+    "R1": {
+      "tipo": "R",
+      "pines": [
+        "1",
+        "2"
+      ],
+      "valor": 1000,
+      "valor_esquematico": "1k"
+    },
+    "R2": {
+      "tipo": "R",
+      "pines": [
+        "1",
+        "2"
+      ],
+      "valor": 68000,
+      "valor_esquematico": "68k"
+    },
+    "R3": {
+      "tipo": "R",
+      "pines": [
+        "1",
+        "2"
+      ],
+      "valor": 470,
+      "valor_esquematico": "470"
+    },
+    "D1": {
+      "tipo": "D",
+      "pines": [
+        "2",
+        "1"
+      ],
+      "modelo": "LED_IDEAL",
+      "valor_esquematico": "LED rojo"
+    },
+    "J1": {
+      "tipo": "omitir",
+      "motivo": "Conector sustituido por fuente de banco de 5 V",
+      "valor_esquematico": "Entrada 5V"
+    },
+    "U1": {
+      "tipo": "X",
+      "pines": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "modelo": "HALO555_ASTABLE",
+      "valor_esquematico": "NE555P"
+    }
+  },
+  "fuentes": [
+    {
+      "positivo": "+5V",
+      "dc": 5
+    }
+  ],
+  "modelos_inline": [
+    "* Halo: astable 555 ideal. TRIG unido a THRESH, RESET a VCC.\n* Sólo temporización: no modela límites, consumo ni caída de salida del NE555.\n.subckt HALO555_ASTABLE g trig out reset ctrl threshold discharge vcc\nBnorm sense g V=V(threshold,g)/max(V(vcc,g),0.1)\nSdis discharge g sense g timing_switch\nSstate q g sense g timing_switch\nRpull vcc q 1000\nBout out g V=V(q,g)\nRupper vcc ctrl 5000\nRlower ctrl g 10000\n.model timing_switch SW(Ron=1 Roff=1e12 Vt=0.5 Vh=0.1666666667)\n.ends HALO555_ASTABLE\n",
+    ".model LED_IDEAL D(Is=1e-20 N=2 Rs=5)"
+  ],
+  "analisis": {
+    "tipo": "tran",
+    "paso": 0.001,
+    "fin": 5,
+    "uic": true
+  },
+  "sondas": [
+    {
+      "id": "salida",
+      "red": "PULSO"
+    },
+    {
+      "id": "condensador",
+      "red": "Net-(U1-THRES)"
+    }
+  ],
+  "medidas": [
+    {
+      "id": "frecuencia",
+      "sonda": "salida",
+      "metrica": "frecuencia",
+      "umbral": 2.5,
+      "desde": 1.5,
+      "min": 1.04,
+      "max": 1.07
+    }
+  ],
+  "limitaciones": [
+    "555 funcional ideal, válido sólo para este astable: TRIG=THRESH y RESET=VCC.",
+    "No verifica consumo, corriente admisible, carga ni caída de salida del NE555 real.",
+    "LED genérico educativo, sin validación de fabricante."
+  ]
+}
