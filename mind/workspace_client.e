@@ -1,11 +1,11 @@
 // Typed workspace adapter. Project recognition proposes a switch; confirmation
 // is handled by the native explorer, never inferred from elapsed time.
-extern c "ai_wire.h" { fn ai_get64(b: []u8,p: u64) -> u64; fn ai_put64(b: []u8,p: u64,v: u64); }
-extern c "ulib.h" { fn usend(s: u64,b: []u8) -> u64; fn urecv(s: u64,b: []u8) -> u64; fn ustrlen(s: str) -> u64; fn ulog(s: str) -> u64; fn ulog_num(s: str,n: u64); }
-extern c "usys.h" { fn usys(nr: u64,a: u64,b: u64,c: u64) -> u64; }
-extern c "platform.h" { fn platform_write(p: ptr<u8>,n: u64); fn platform_now_ms() -> u64; fn platform_clear_cancel(); fn platform_halo(state: u64); }
-extern c "document_client.h" { fn document_external_opened(); }
-extern c "chat.h" { fn model_chat(user: []u8,limit: u64) -> u64; fn model_chat_answer() -> []u8; fn model_restore_conversation(b: []u8) -> bool; fn model_reset_context(); }
+import ai_wire;
+import ulib;
+import usys;
+import platform;
+import document_client;
+import chat;
 var wc_id: u64=0; var wc_reply: [256]u8; var wc_visible: bool=false; var wc_dialog: u64=0;
 var wc_epoch: u64=0; var wc_loaded_epoch: u64=0; var wc_project: u64=0; var wc_count: u64=0;
 var wc_button: u64=0; var wc_click: u64=0; var wc_click_time: u64=0;

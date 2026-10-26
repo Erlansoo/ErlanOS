@@ -1,14 +1,10 @@
 // L1 — IPC síncrono por endpoints: un slot de mensaje de hasta 256 bytes.
 // El emisor bloquea si el slot está lleno; el receptor bloquea si está vacío.
 
-extern c "kmem.h" { fn kmemcpy(dst: u64, src: u64, n: u64); }
-extern c "sched.h" {
-    fn sched_current_id() -> u64;
-    fn sched_block(obj: u64);
-    fn sched_wake(id: u64);
-}
-extern c "serial.h" { fn kprintf(fmt: str, ...); }
-extern c "panic.h" { fn kpanic(msg: str); }
+import kmem;
+import sched;
+import serial;
+import panic;
 
 const MAX_ENDPOINTS: u64 = 8;
 const MSG_MAX: u64 = 256;
@@ -47,7 +43,7 @@ fn ipc_create() -> u64 {
 fn ipc_send(ep: u64, src: u64, len: u64) -> u64 {
     if ep >= MAX_ENDPOINTS || !endpoints[ep].used { return 1; }
     if len > MSG_MAX { return 2; }
-    let e = &endpoints[ep];
+    let e = &mut endpoints[ep];
     while e.has_msg {
         e.send_waiter = sched_current_id() + 1;
         sched_block(ep);
@@ -65,7 +61,7 @@ fn ipc_send(ep: u64, src: u64, len: u64) -> u64 {
 // Espera un mensaje y lo copia a `dst` (máximo `cap` bytes). Devuelve la longitud.
 fn ipc_recv(ep: u64, dst: u64, cap: u64) -> u64 {
     if ep >= MAX_ENDPOINTS || !endpoints[ep].used { return 0; }
-    let e = &endpoints[ep];
+    let e = &mut endpoints[ep];
     while !e.has_msg {
         e.recv_waiter = sched_current_id() + 1;
         sched_block(ep);

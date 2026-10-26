@@ -1,9 +1,9 @@
 // L1 — teclado PS/2 (scancode set 1). Traduce a ASCII y encola; los servicios lo
 // leen con la syscall getkey (capability Input).
 
-extern c "cpu.h" { fn inb(port: u16) -> u8; }
-extern c "serial.h" { fn kprintf(fmt: str, ...); }
-extern c "pointer.h" { fn pointer_byte(c: u8); }
+import cpu;
+import serial;
+import pointer;
 
 // Índice = scancode (0..57). Un 0 significa tecla sin carácter (shift, ctrl, F1...).
 let KEYMAP: str = "\0\x1b" "1234567890-=" "\b\t" "qwertyuiop[]" "\n\0" "asdfghjkl;'`" "\0\\" "zxcvbnm,./" "\0*\0 ";
@@ -26,9 +26,7 @@ var cancel_pending: bool = false;
 fn keyboard_init() {
     left_shift = false; right_shift = false; extended = false;
     q_head = 0; q_tail = 0; cancel_pending = false; keys_total = 0;
-    var n: u64 = 0;
-    while (inb(0x64) & 1) != 0 && n < 16 { inb(0x60); n += 1; }
-    kprintf("[kbd] ps/2 listo\n");
+    kprintf("[kbd] ps/2 listo (controlador: i8042.e)\n");
 }
 
 fn keyboard_scancode(sc: u8) {
@@ -63,7 +61,6 @@ fn keyboard_scancode(sc: u8) {
     q_tail = next;
 }
 
-fn keyboard_irq() { let status=inb(0x64); if (status&1)==0 { return; } let c=inb(0x60); if (status&32)!=0 { pointer_byte(c); } else { keyboard_scancode(c); } }
 
 // 0 si no hay tecla pendiente.
 fn keyboard_getc() -> u8 {

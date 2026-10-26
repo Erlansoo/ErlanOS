@@ -1,11 +1,10 @@
 // Trusted D1 surface: bounded folder rows over the existing canvas. No paths,
 // block addresses or filesystem policy enter the renderer.
-extern c "fb.h" { struct Fb { base: ptr<u32>; width: u64; height: u64; pitch: u64; rs: u8; gs: u8; bs: u8; }
-    fn fb_rgb(f: ptr<Fb>,r: u8,g: u8,b: u8) -> u32; fn fb_pixel(f: ptr<Fb>,x: i64,y: i64,c: u32); fn fb_rect(f: ptr<Fb>,x: i64,y: i64,w: i64,h: i64,c: u32); }
-extern c "console.h" { fn console_framebuffer() -> ptr<Fb>; fn canvas_color(x: i64,y: i64) -> u32; }
-extern c "document_view.h" { fn dv_decode(b: []u8,at: u64) -> u64; }
-extern c "docfont.h" { fn docfont_advance(font: u64,ch: u64) -> u64; fn docfont_alpha(font: u64,ch: u64,x: u64,y: u64) -> u64; }
-extern c "pointer.h" { fn pointer_position() -> u64; fn pointer_hide(); fn pointer_show(); }
+import fb;
+import console;
+import document_view;
+import docfont;
+import pointer;
 var wv_f: ptr<Fb>; var wv_x: i64=0; var wv_y: i64=0; var wv_w: i64=0; var wv_h: i64=0;
 var wv_open: bool=false; var wv_packet: [2048]u8; var wv_under: [400000]u32;
 var wv_project: u64=0; var wv_project_name: [80]u8;

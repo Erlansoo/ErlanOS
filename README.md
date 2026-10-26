@@ -7,14 +7,16 @@ review and change it.
 
 - **Microkernel (x86-64, UEFI + Limine):** per-process paging, preemptive round-robin scheduler
   (PIT quantum, XSAVE context switch), Ring 3 processes, `int 0x80` syscalls, typed per-process
-  capabilities and synchronous IPC.
+  capabilities and synchronous IPC. ACPI, LAPIC/IOAPIC, MSI/MSI-X, AHCI, NVMe and an own i8042 driver.
 - **Erlan language:** own systems language with a bootstrap compiler (`erlan/erlancompiler.py`,
-  Erlan to C), used for the kernel, the user-space services and the network stack.
+  Erlan to C). The kernel, the services, the network stack and the model runtime are written in it.
+  Memory model: Rust's ownership, borrows and lifetimes, checked on a MIR-like IR (first slice landed).
 - **Native LLM inference inside the OS:** the Ring 3 `model` service maps a GGUF file, tokenizes and
   runs CPU inference (Q8_0). Supports Llama, Qwen2 and Qwen3.5 (GatedDeltaNet + GQA attention).
 - **AI Kernel API v0:** structured actions over IPC to an isolated `system` service (never shell
   commands), with message validation, permission tests and execution receipts.
-- **Networking:** Intel e1000 driver and ARP/IPv4/UDP/DHCP/DNS written in Erlan.
+- **Networking:** Intel e1000 driver and ARP/IPv4/UDP/TCP/DHCP/DNS written in Erlan; boots installed
+  in a VirtualBox EFI VM with DHCP, DNS and HTTP working (`docs/VIRTUALBOX.md`).
 - **Halo**, the companion workspace where you watch the AI work live:
   - Claude Code chats per project tab (official CLI, permission buttons, Remote Control), and an
     ELP1 gateway so the chat inside ErlanOS can reach an agent on the host.
@@ -71,8 +73,11 @@ o `Redacta un informe breve sobre energia solar`. La edición vive en ErlanOS;
 PDF/DOCX/ODT se convierten mediante un puente temporal en el anfitrión y el estado
 del guest sigue en RAM. Alcance y comandos en [docs/DOCUMENTOS.md](docs/DOCUMENTOS.md).
 
-El soporte actual está validado en QEMU. GPU de cómputo, internet e instalación
-física siguen pendientes; evaluación del equipo y propuesta en
+El soporte actual está validado en QEMU y, desde el 26/10/2026, también en una VM de
+**VirtualBox** con firmware EFI en esta PC: arranque, consola, teclado PS/2, modelo cargado y la
+pila de red completa (DHCP, DNS, TCP, HTTP) sobre el 82540EM emulado. Script y evidencia:
+`scriptsbox_erlanos.ps1` y [docs/VIRTUALBOX.md](docs/VIRTUALBOX.md). GPU de cómputo e
+instalación física siguen pendientes; evaluación del equipo y propuesta en
 [docs/HARDWARE-REAL.md](docs/HARDWARE-REAL.md).
 
 Windows (Git Bash):
@@ -131,10 +136,20 @@ bash scripts/setup-wsl.sh
 make run
 ```
 
+Todo el código fuente del sistema está en Erlan: desde el 26/10/2026 `kernel/`, `services/`,
+`net/` y `mind/` no tienen ningún archivo C propio (instrucciones privilegiadas, Limine,
+`kprintf`, los stubs de interrupción, el `_start` de los servicios y la plataforma del modelo
+son módulos `.e`); quedan los datos generados de las fuentes, el runtime del compilador y los
+arneses de prueba. Qué se añadió al lenguaje y qué falta: [docs/ERLAN-SISTEMA.md](docs/ERLAN-SISTEMA.md).
+El mismo día entraron el driver **AHCI** (`kernel/src/ahci.e`: el espacio persistente D1 monta
+también desde un disco SATA, en QEMU y en VirtualBox, [docs/WORKSPACE.md](docs/WORKSPACE.md)) y
+**ACPI + APIC + MSI** (`acpi.e`, `apic.e`, `pci_msi.e`: tablas ACPI leídas, el reloj del sistema en
+el temporizador del LAPIC y las completaciones del AHCI por MSI, [docs/APIC.md](docs/APIC.md)).
+
 ## Layout
 
 ```
-kernel/    L1  microkernel (memoria, interrupciones, scheduler, IPC, capabilities)
+kernel/    L1  microkernel en Erlan (memoria, interrupciones, scheduler, IPC, capabilities); kernel/entry: kmain de las imágenes de prueba
 services/  L2  servicios de usuario en Erlan (init, echo, system, model runtime)
 mind/      L3  controlador de acciones M4; router y memoria después
 caps/      L4  capabilities de dominio (Electronics/KiCad, MCU target packs, CAD)

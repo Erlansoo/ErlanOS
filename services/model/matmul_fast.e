@@ -1,6 +1,6 @@
 // Erlan Q20 specialization. Compile ONLY this module with -O3 -mavx2 -mno-fma.
 // Caller checks CPU/OS support and Q8_0 dimensions; math matches the portable path.
-extern c "umath.h" { fn f16_to_f32(h: u16) -> f32; fn ld_u16(a: u64) -> u16; }
+import umath;
 
 fn matmul_q20_fast(out: []f32, xin: []f32, w: u64, rows: u64, cols: u64, quant: []i32, scales: []f32) {
     let nb = cols / 32;

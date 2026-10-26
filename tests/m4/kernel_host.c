@@ -19,7 +19,7 @@ static u64 recv_calls, send_calls;
 void erlan_panic(const char *msg) { fprintf(stderr, "%s\n", msg); abort(); }
 void kpanic(const char *msg) { erlan_panic(msg); }
 void kprintf(const char *fmt, ...) { (void)fmt; }
-void serial_putc(char c) { (void)c; }
+void serial_putc(u8 c) { (void)c; }
 u64 cpu_read_cr3(void) { return (u64)pml4; }
 void cpu_write_cr3(u64 n) { (void)n; }
 void cpu_invlpg(u64 n) { (void)n; }

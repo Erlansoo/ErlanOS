@@ -1,61 +1,14 @@
 // Transformers Llama / Qwen2 (RMSNorm, RoPE, GQA, SwiGLU) con caché KV, en Erlan.
 // Pesos Q8_0 / F16 / F32 leídos directamente del GGUF mapeado. Un token por paso.
 
-extern c "umath.h" { fn f16_to_f32(h: u16) -> f32; fn ld_u16(a: u64) -> u16; fn ld_f32(a: u64) -> f32; }
-extern c "umath.h" { fn math_cpu_avx2() -> bool; }
-extern c "matmul_fast.h" {
-    fn matmul_q20_fast(out: []f32, xin: []f32, w: u64, rows: u64, cols: u64, quant: []i32, scales: []f32);
-}
-extern c "platform.h" {
-    fn platform_log(s: str);
-    fn platform_now_ms() -> u64;
-    fn platform_yield();
-    fn platform_cancelled() -> bool;
-}
-extern c "arena.h" {
-    fn arena_f32(n: u64) -> []f32;
-    fn arena_u64(n: u64) -> []u64;
-    fn arena_u32(n: u64) -> []u32;
-    fn arena_used() -> u64;
-    fn arena_size() -> u64;
-}
-extern c "mathx.h" {
-    fn mx_exp(x: f32) -> f32;
-    fn mx_pow(b: f32, e: f32) -> f32;
-    fn mx_sin(x: f32) -> f32;
-    fn mx_cos(x: f32) -> f32;
-    fn mx_silu(x: f32) -> f32;
-    fn mx_sqrt(x: f32) -> f32;
-}
-extern c "gguf.h" {
-    fn gguf_find(name: []u8) -> u64;
-    fn gguf_tensor_addr(i: u64) -> u64;
-    fn gguf_tensor_type(i: u64) -> u32;
-    fn gguf_tensor_ne0(i: u64) -> u64;
-    fn gguf_tensor_ne1(i: u64) -> u64;
-    fn gguf_tensor_ndim(i: u64) -> u64;
-    fn gguf_architecture() -> u64;
-    fn gguf_n_tensors() -> u64;
-    fn gguf_n_layers() -> u64;
-    fn gguf_dim() -> u64;
-    fn gguf_hidden() -> u64;
-    fn gguf_n_heads() -> u64;
-    fn gguf_n_kv_heads() -> u64;
-    fn gguf_rope_dim() -> u64;
-    fn gguf_rope_base() -> f32;
-    fn gguf_eps() -> f32;
-    fn gguf_ctx_len() -> u64;
-    fn gguf_vocab_n() -> u64;
-}
-extern c "qwen35.h" {
-    fn qwen35_init() -> bool;
-    fn qwen35_step(token: u64, pos: u64, need_logits: bool);
-    fn qwen35_reset_context(); fn qwen35_argmax() -> u64;
-    fn qwen35_logit(i: u64) -> f32; fn qwen35_forward_cancelled() -> bool;
-    fn qwen35_forward_ms() -> u64; fn qwen35_forward_count() -> u64;
-    fn qwen35_ctx() -> u64; fn qwen35_vocab() -> u64;
-    fn qwen35_dim() -> u64; fn qwen35_n_layers() -> u64;
-}
+import umath;
+
+import matmul_fast;
+import platform;
+import arena;
+import mathx;
+import gguf;
+import qwen35;
 
 const GGML_F32: u32 = 0;
 const GGML_F16: u32 = 1;

@@ -2,42 +2,10 @@
 // datagramas con sondeo. Responde ARP dirigido a nosotros mientras espera.
 // Depende de la plataforma sólo a través de netplat.h (tx/rx/reloj/log).
 
-extern c "netplat.h" {
-    fn netplat_tx(p: ptr<u8>, n: u64) -> bool;
-    fn netplat_rx(p: ptr<u8>, max: u64) -> u64;
-    fn netplat_now_ms() -> u64;
-    fn netplat_wait_ms(ms: u64);
-    fn netplat_log(s: str);
-    fn netplat_mac(out: ptr<u8>);
-}
-extern c "wire.h" {
-    fn be16_get(b: []u8, off: u64) -> u16;
-    fn mac_copy(dst: []u8, doff: u64, src: []u8, soff: u64);
-    fn fmt_str(buf: []u8, pos: u64, s: str) -> u64;
-    fn fmt_ip(buf: []u8, pos: u64, ip: u32) -> u64;
-    fn fmt_mac(buf: []u8, pos: u64, m: []u8, off: u64) -> u64;
-}
-extern c "arp.h" {
-    fn arp_build(buf: []u8, oper: u16, my_mac: []u8, my_ip: u32, target_mac: []u8, target_ip: u32) -> u64;
-    fn arp_is_arp(frame: []u8, len: u64) -> bool;
-    fn arp_is_reply_for(frame: []u8, len: u64, ip: u32) -> bool;
-    fn arp_is_request_for(frame: []u8, len: u64, my_ip: u32) -> bool;
-    fn arp_sender_ip(frame: []u8) -> u32;
-    fn arp_sender_mac(frame: []u8, out: []u8);
-    fn arp_answer(request: []u8, out: []u8, my_mac: []u8, my_ip: u32) -> u64;
-}
-extern c "ipv4.h" {
-    fn ip_parse(frame: []u8, len: u64, my_ip: u32) -> bool;
-    fn udp_parse(frame: []u8, len: u64) -> bool;
-    fn ip_last_src() -> u32;
-    fn ip_last_proto() -> u64;
-    fn udp_last_sport() -> u16;
-    fn udp_last_dport() -> u16;
-    fn udp_last_data_off() -> u64;
-    fn udp_last_data_len() -> u64;
-    fn ip_udp_build(buf: []u8, dst_mac: []u8, src_mac: []u8, src_ip: u32, dst_ip: u32,
-                    sport: u16, dport: u16, payload_len: u64) -> u64;
-}
+import netplat;
+import wire;
+import arp;
+import ipv4;
 
 const UDP_DATA_OFF: u64 = 42;
 const ARP_CACHE: u64 = 8;

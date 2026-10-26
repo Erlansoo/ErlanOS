@@ -38,15 +38,15 @@ def main():
     selected_source = out / "llama_selected.e"
     selected_source.write_text(llama_source, encoding="utf-8")
     print(f"MATMUL_PATH {'float4-test-baseline' if args.float_baseline else 'q20-production'}", flush=True)
-    for module in ("arena", "mathx", "gguf", "qwen35", "matmul_fast", "llama"):
+    for module in ("umath", "arena", "mathx", "gguf", "qwen35", "matmul_fast", "llama"):
         source = selected_source if module == "llama" else f"services/model/{module}.e"
         run([sys.executable, "erlan/erlancompiler.py", source, "-o", gen / f"{module}.c",
-             "--header", gen / f"{module}.h"])
+             "--header", gen / f"{module}.h", "-Iservices/model", "-Iservices/lib", "-Imind"])
     run([sys.executable, "erlan/erlancompiler.py", "tests/model/matmul_reference.e", "-o", gen / "matmul_reference.c",
-         "--header", gen / "matmul_reference.h"])
+         "--header", gen / "matmul_reference.h", "-Iservices/model", "-Iservices/lib", "-Imind"])
     flags = [compiler, "-std=c11", "-O3", "-g", "-Wall", "-Wno-unused-const-variable", "-Wno-unused-parameter",
              "-Wno-unused-variable", "-Wno-parentheses-equality", "-Itests/model/stubs", f"-I{gen}", "-Iservices/model", "-Ierlan/runtime"]
-    common = ["tests/model/numeric.c", *[gen / f"{m}.c" for m in ("arena", "mathx", "gguf", "qwen35", "matmul_reference")]]
+    common = ["tests/model/numeric.c", *[gen / f"{m}.c" for m in ("umath", "arena", "mathx", "gguf", "qwen35", "matmul_reference")]]
     fast_object = out / "matmul_fast.o"
     run([*flags, "-mavx2", "-mno-fma", "-c", gen / "matmul_fast.c", "-o", fast_object])
     common.append(fast_object)
@@ -63,7 +63,7 @@ def main():
         start, end = original.index("fn matmul("), original.index("fn dequant_row(")
         baseline = out / "llama_baseline.e"
         baseline.write_text(original[:start] + body + "\n" + original[end:], encoding="utf-8")
-        run([sys.executable, "erlan/erlancompiler.py", baseline, "-o", gen / "llama_baseline.c"])
+        run([sys.executable, "erlan/erlancompiler.py", baseline, "-o", gen / "llama_baseline.c", "-Iservices/model", "-Iservices/lib", "-Imind"])
         reference_exe = out / ("baseline.exe" if os.name == "nt" else "baseline")
         run([*flags, *common, gen / "llama_baseline.c", "-o", reference_exe])
         model = (root / args.model).resolve()

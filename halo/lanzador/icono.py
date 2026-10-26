@@ -1,6 +1,8 @@
-"""Dibuja el icono del Halo (el halo de tres puntos sobre el fondo café) sin ninguna biblioteca gráfica.
+"""Dibuja el icono del Halo (aureola dorada sobre los tres puntos, en un cuadro café) sin ninguna biblioteca gráfica.
 
-    python halo/lanzador/icono.py     -> build/halo/halo.ico (256 px) y halo/ui/halo.png (64 px)
+    python halo/lanzador/icono.py     -> build/halo/halo.ico (16 a 256 px) y halo/ui/halo.png (64 px)
+
+Cada tamaño se dibuja aparte: en 24 px o menos los trazos engordan y se quitan los brillos para que se lea.
 """
 from __future__ import annotations
 
@@ -11,6 +13,16 @@ import zlib
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
+TAMANOS = (16, 24, 32, 48, 64, 128, 256)
+
+CAFE_ARRIBA = (78, 55, 40)
+CAFE_ABAJO = (28, 19, 13)
+LUZ_CENTRO = (128, 90, 60)
+BORDE = (168, 126, 90)
+ORO = (247, 200, 110)
+ORO_BRILLO = (240, 168, 74)
+CREMA = (248, 238, 224)
+BRILLO_PUNTOS = (255, 226, 180)
 
 
 def png(ancho: int, alto: int, pixel) -> bytes:
@@ -28,38 +40,91 @@ def png(ancho: int, alto: int, pixel) -> bytes:
             + trozo(b"IDAT", zlib.compress(bytes(filas), 9)) + trozo(b"IEND", b""))
 
 
-def ico(imagen_png: bytes, lado: int) -> bytes:
-    """ICO con una sola imagen PNG (válido desde Windows Vista)."""
-    cabecera = struct.pack("<HHH", 0, 1, 1)
-    entrada = struct.pack("<BBBBHHII", lado % 256, lado % 256, 0, 0, 1, 32, len(imagen_png), 22)
-    return cabecera + entrada + imagen_png
+def ico(imagenes: list[tuple[int, bytes]]) -> bytes:
+    """ICO con una imagen PNG por tamaño (válido desde Windows Vista)."""
+    cabecera = struct.pack("<HHH", 0, 1, len(imagenes))
+    entradas, datos = b"", b""
+    desplazamiento = 6 + 16 * len(imagenes)
+    for lado, imagen in imagenes:
+        entradas += struct.pack("<BBBBHHII", lado % 256, lado % 256, 0, 0, 1, 32, len(imagen), desplazamiento + len(datos))
+        datos += imagen
+    return cabecera + entradas + datos
 
 
-def halo(lado: int):
-    """Disco café con luz en el centro y tres puntos claros, con borde suave."""
+def mezclar(a, b, t):
+    return tuple(a[i] + (b[i] - a[i]) * t for i in range(3))
+
+
+def encima(fondo, color, alfa):
+    """Pinta color con cobertura alfa sobre fondo (r, g, b, a)."""
+    a = alfa + fondo[3] * (1 - alfa)
+    if a <= 0:
+        return (0.0, 0.0, 0.0, 0.0)
+    k = alfa / a
+    return (*(fondo[i] + (color[i] - fondo[i]) * k for i in range(3)), a)
+
+
+def cuadro_redondeado(x, y, mitad, radio):
+    """Distancia con signo a un cuadrado centrado de lado 2·mitad y esquinas de radio dado."""
+    qx, qy = abs(x) - mitad + radio, abs(y) - mitad + radio
+    return math.hypot(max(qx, 0), max(qy, 0)) + min(max(qx, qy), 0) - radio
+
+
+def aureola(lado: int):
+    """Cuadro café con luz cálida, aureola dorada que flota y tres puntos crema debajo."""
+    chico = lado <= 24
+    muestras = 4 if lado <= 64 else 3                     # supermuestreo por pixel para bordes suaves
     c = lado / 2
-    radio = lado * 0.47
-    puntos = [(c - lado * 0.19, c), (c, c), (c + lado * 0.19, c)]
-    r_punto = lado * 0.055
+    mitad, radio = lado * 0.46, lado * (0.26 if chico else 0.235)
+    separacion = lado * (0.205 if chico else 0.165)
+    r_punto = lado * (0.088 if chico else 0.062)
+    y_puntos = lado * (0.11 if chico else 0.085)
+    ax, ay = lado * (0.30 if chico else 0.25), lado * (0.09 if chico else 0.075)
+    y_aureola = -lado * (0.19 if chico else 0.17)
+    grosor = lado * (0.085 if chico else 0.034)
 
-    def mezclar(a, b, t):
-        return tuple(int(round(a[i] + (b[i] - a[i]) * t)) for i in range(3))
+    def muestra(x, y):
+        color = (0.0, 0.0, 0.0, 0.0)
+        d_cuadro = cuadro_redondeado(x, y, mitad, radio)
+        if d_cuadro > 0:
+            return color
+        t = (y + mitad) / (2 * mitad)
+        color = encima(color, mezclar(CAFE_ARRIBA, CAFE_ABAJO, t ** 0.9), 1.0)
+        color = encima(color, LUZ_CENTRO, 0.42 * math.exp(-(x * x + y * y) / (2 * (lado * 0.33) ** 2)))
+        if d_cuadro > -lado * 0.024:                      # borde claro para que se vea en barras oscuras
+            color = encima(color, BORDE, 0.6 * (1 + d_cuadro / (lado * 0.024)))
+
+        v = y - y_aureola                                 # aureola: anillo elíptico, más claro adelante
+        f = math.hypot(x, v * ax / ay)
+        gradiente = math.hypot(x, v * (ax / ay) ** 2) / max(f, 1e-9)
+        d = abs((f - ax) / gradiente) - grosor / 2
+        if not chico:
+            if f < ax:
+                color = encima(color, ORO_BRILLO, 0.16)
+            color = encima(color, ORO_BRILLO, 0.4 * math.exp(-max(d, 0) ** 2 / (2 * (lado * 0.038) ** 2)))
+        if d <= 0:
+            color = encima(color, mezclar(ORO_BRILLO, ORO, 1.0 if v > 0 else 0.7), 1.0)
+
+        for px in (-separacion, 0.0, separacion):         # los tres puntos del Halo
+            dp = math.hypot(x - px, y - y_puntos) - r_punto
+            if not chico:
+                color = encima(color, BRILLO_PUNTOS, 0.22 * math.exp(-max(dp, 0) ** 2 / (2 * (lado * 0.035) ** 2)))
+            if dp <= 0:
+                color = encima(color, CREMA, 1.0)
+        return color
 
     def pixel(x, y):
-        dx, dy = x + 0.5 - c, y + 0.5 - c
-        d = math.hypot(dx, dy)
-        alfa = max(0.0, min(1.0, radio - d + 0.5))           # borde del disco suavizado
-        if alfa <= 0:
+        suma = [0.0, 0.0, 0.0, 0.0]
+        for sy in range(muestras):
+            for sx in range(muestras):
+                r, g, b, a = muestra(x + (sx + 0.5) / muestras - c, y + (sy + 0.5) / muestras - c)
+                suma[0] += r * a
+                suma[1] += g * a
+                suma[2] += b * a
+                suma[3] += a
+        if suma[3] <= 0:
             return (0, 0, 0, 0)
-        t = min(1.0, d / radio)
-        color = mezclar((109, 76, 51), (42, 29, 20), t ** 0.85)  # del centro cálido al borde oscuro
-        brillo = 0.0
-        for px, py in puntos:
-            dp = math.hypot(x + 0.5 - px, y + 0.5 - py)
-            brillo = max(brillo, max(0.0, min(1.0, r_punto - dp + 0.5)))          # el punto
-            brillo = max(brillo, 0.35 * max(0.0, 1 - (dp - r_punto) / (r_punto * 1.6)) if dp > r_punto else brillo)
-        color = mezclar(color, (236, 223, 207), brillo)
-        return (*color, int(round(255 * alfa)))
+        return (*(int(round(suma[i] / suma[3])) for i in range(3)), int(round(255 * suma[3] / muestras ** 2)))
 
     return pixel
 
@@ -68,10 +133,10 @@ def main() -> int:
     destino_ico = REPO / "build" / "halo" / "halo.ico"
     destino_png = REPO / "halo" / "ui" / "halo.png"
     destino_ico.parent.mkdir(parents=True, exist_ok=True)
-    grande = png(256, 256, halo(256))
-    destino_ico.write_bytes(ico(grande, 256))
-    destino_png.write_bytes(png(64, 64, halo(64)))
-    print(f"{destino_ico} ({len(grande)} bytes de PNG)")
+    imagenes = [(lado, png(lado, lado, aureola(lado))) for lado in TAMANOS]
+    destino_ico.write_bytes(ico(imagenes))
+    destino_png.write_bytes(dict(imagenes)[64])
+    print(f"{destino_ico} ({len(imagenes)} tamaños: {', '.join(str(lado) for lado, _ in imagenes)} px)")
     print(destino_png)
     return 0
 

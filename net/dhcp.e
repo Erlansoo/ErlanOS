@@ -1,18 +1,8 @@
 // Cliente DHCP (RFC 2131) en Erlan: DISCOVER -> OFFER -> REQUEST -> ACK sobre UDP 68/67.
 
-extern c "netplat.h" { fn netplat_now_ms() -> u64; fn netplat_log(s: str); }
-extern c "wire.h" {
-    fn be16_put(b: []u8, off: u64, v: u16);
-    fn be32_get(b: []u8, off: u64) -> u32;
-    fn be32_put(b: []u8, off: u64, v: u32);
-}
-extern c "netio.h" {
-    fn netio_payload() -> []u8;
-    fn netio_my_mac(out: []u8);
-    fn netio_send_udp(src_ip: u32, dst_ip: u32, sport: u16, dport: u16, payload_len: u64) -> bool;
-    fn netio_wait_udp(port: u16, timeout_ms: u64, out: []u8) -> u64;
-    fn netio_set_addr(ip: u32, mask: u32, gw: u32);
-}
+import netplat;
+import wire;
+import netio;
 
 const DHCP_CLIENT: u16 = 68;
 const DHCP_SERVER: u16 = 67;

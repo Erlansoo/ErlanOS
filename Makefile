@@ -13,6 +13,9 @@ OBJCOPY := llvm-objcopy
 QEMU    := qemu-system-x86_64
 PYTHON  := python
 ERLAN   := $(PYTHON) erlan/erlancompiler.py
+# Dónde busca `import modulo;` los .e del kernel/red y los de los servicios.
+EINC_K  := -Ikernel/src -Inet -Inet/tls
+EINC_U  := -Iservices/lib -Iservices/model -Imind
 
 BUILD   := build
 ESP     := esp
@@ -29,8 +32,9 @@ LIMINE  := third_party/limine
 # En Windows se define OVMF en scripts/env.sh (la ruta tiene espacios y wildcard no la soporta).
 OVMF    ?= $(firstword $(wildcard /usr/share/OVMF/OVMF_CODE_4M.fd /usr/share/OVMF/OVMF_CODE.fd /usr/share/ovmf/OVMF.fd))
 
-# El C generado por erlancompiler usa paréntesis y constantes de forma mecánica.
-EFLAGS := -Wno-parentheses-equality -Wno-unused-const-variable -Wno-unused-parameter
+# El C generado por erlancompiler usa paréntesis y constantes de forma mecánica; string.e
+# define memcpy/memset/memmove/memcmp con tipos Erlan (u64 en vez de size_t).
+EFLAGS := -Wno-parentheses-equality -Wno-unused-const-variable -Wno-unused-parameter -Wno-incompatible-library-redeclaration
 
 # ---------------------------------------------------------------- kernel (L1)
 CFLAGS  := -std=gnu11 -O2 -g -Wall -Wextra -pipe \
@@ -38,15 +42,16 @@ CFLAGS  := -std=gnu11 -O2 -g -Wall -Wextra -pipe \
            -ffreestanding -fno-stack-protector -fno-stack-check -fno-lto -fno-PIC \
            -fno-asynchronous-unwind-tables -fno-unwind-tables \
            -m64 -march=x86-64 -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone \
-           -mcmodel=kernel -I$(KSRC) -I$(GEN) -Ierlan/runtime
+           -mcmodel=kernel -I$(KSRC) -I$(GEN) -Ierlan/runtime -Iassets/fonts
 
 LDFLAGS := -nostdlib -static -z max-page-size=0x1000 -T kernel/linker.ld
 
-SRCS  := $(wildcard $(KSRC)/*.c)
-OBJS  := $(patsubst $(KSRC)/%.c,$(BUILD)/%.o,$(SRCS))
+# Todo el kernel está en Erlan (kernel/src/*.e); las entradas de las imágenes de prueba
+# viven en kernel/entry/*.e y sustituyen a main.e en cada una.
 ESRCS := $(wildcard $(KSRC)/*.e)
 GENH  := $(patsubst $(KSRC)/%.e,$(GEN)/%.h,$(ESRCS))
 EOBJS := $(patsubst $(KSRC)/%.e,$(BUILD)/%.e.o,$(ESRCS))
+KOBJS := $(filter-out $(BUILD)/main.e.o,$(EOBJS))
 # Pila de red en Erlan (net/): se enlaza en el kernel de prueba de red; en su forma
 # final correrá en un servicio Ring 3 con el mismo código.
 NET_ESRCS := $(wildcard net/*.e net/tls/*.e)
@@ -62,7 +67,7 @@ UBINS    := $(patsubst %,$(UOUT)/%.bin,$(SERVICES))
 UCFLAGS  := -std=gnu11 -O2 -g -Wall -pipe --target=x86_64-unknown-none-elf \
             -ffreestanding -fno-stack-protector -fno-stack-check -fno-lto -fno-PIC \
             -fno-asynchronous-unwind-tables -fno-unwind-tables -m64 -mcmodel=small \
-            -Iservices/lib -I$(UGEN) -Ierlan/runtime $(EFLAGS)
+            -Iservices/lib -I$(UGEN) -Ierlan/runtime -Iassets/fonts $(EFLAGS)
 
 # ---------------------------------------------------------------- QEMU
 # WHPX en Windows o KVM en Linux/WSL, comprobado con una VM pausada y sin discos.
@@ -91,40 +96,40 @@ test-m4: esp
 
 # ---- kernel
 $(GEN)/%.c $(GEN)/%.h &: $(KSRC)/%.e erlan/erlancompiler.py | $(GEN)
-	$(ERLAN) $< -o $(GEN)/$*.c --header $(GEN)/$*.h
+	$(ERLAN) $< -o $(GEN)/$*.c --header $(GEN)/$*.h $(EINC_K)
 
 $(GEN)/%.c $(GEN)/%.h &: net/%.e erlan/erlancompiler.py | $(GEN)
-	$(ERLAN) $< -o $(GEN)/$*.c --header $(GEN)/$*.h
+	$(ERLAN) $< -o $(GEN)/$*.c --header $(GEN)/$*.h $(EINC_K)
 
 # Criptografía y TLS nativos (net/tls/): SHA-2, HMAC/HKDF, AES-GCM, X25519, ECDSA.
 $(GEN)/%.c $(GEN)/%.h &: net/tls/%.e erlan/erlancompiler.py | $(GEN)
-	$(ERLAN) $< -o $(GEN)/$*.c --header $(GEN)/$*.h
+	$(ERLAN) $< -o $(GEN)/$*.c --header $(GEN)/$*.h $(EINC_K)
+
+# Entradas de las imágenes de prueba (kmain propio): kernel/entry/probe_*.e
+$(GEN)/%.c $(GEN)/%.h &: kernel/entry/%.e erlan/erlancompiler.py | $(GEN)
+	$(ERLAN) $< -o $(GEN)/$*.c --header $(GEN)/$*.h $(EINC_K)
 
 $(BUILD)/%.e.o: $(GEN)/%.c erlan/runtime/erlan_rt.h $(wildcard $(KSRC)/*.h) $(GENH) $(NET_GENH) | $(BUILD)
 	$(CC) $(CFLAGS) $(EFLAGS) -c $< -o $@
 
-$(BUILD)/%.o: $(KSRC)/%.c $(wildcard $(KSRC)/*.h) $(GENH) | $(BUILD)
-	$(CC) $(CFLAGS) -c $< -o $@
+# Los stubs de interrupción se generan en Erlan (scripts/gen_isr.py) y se versionan.
+$(KSRC)/isr_stubs.e: scripts/gen_isr.py
+	$(PYTHON) scripts/gen_isr.py
 
-$(BUILD)/kernel.elf: $(OBJS) $(EOBJS) kernel/linker.ld
-	$(LD) $(LDFLAGS) $(OBJS) $(EOBJS) -o $@
+$(BUILD)/kernel.elf: $(EOBJS) kernel/linker.ld
+	$(LD) $(LDFLAGS) $(EOBJS) -o $@
 
-# Standalone discovery image: only the entry object differs from the main kernel.
-$(BUILD)/main-probe.o: $(KSRC)/main.c $(wildcard $(KSRC)/*.h) $(GENH) | $(BUILD)
-	$(CC) $(CFLAGS) -DERLANOS_HARDWARE_PROBE -c $< -o $@
-
-$(BUILD)/kernel-probe.elf: $(filter-out $(BUILD)/main.o,$(OBJS)) $(EOBJS) $(BUILD)/main-probe.o kernel/linker.ld
-	$(LD) $(LDFLAGS) $(filter-out $(BUILD)/main.o,$(OBJS)) $(EOBJS) $(BUILD)/main-probe.o -o $@
+# Imagen de diagnóstico G0: el mismo kernel con la entrada kernel/entry/probe_hardware.e.
+$(BUILD)/kernel-probe.elf: $(KOBJS) $(BUILD)/probe_hardware.e.o kernel/linker.ld
+	$(LD) $(LDFLAGS) $(KOBJS) $(BUILD)/probe_hardware.e.o -o $@
 
 hardware-image: $(BUILD)/kernel-probe.elf
 	$(PYTHON) scripts/build_hardware_image.py
 
-# Imagen de prueba de red: kernel + driver e1000 + pila net/, sin servicios ni modelo.
-$(BUILD)/main-net.o: $(KSRC)/main.c $(wildcard $(KSRC)/*.h) $(GENH) $(NET_GENH) | $(BUILD)
-	$(CC) $(CFLAGS) -DERLANOS_NET_PROBE -c $< -o $@
-
-$(BUILD)/kernel-net.elf: $(filter-out $(BUILD)/main.o,$(OBJS)) $(EOBJS) $(NET_EOBJS) $(BUILD)/main-net.o kernel/linker.ld
-	$(LD) $(LDFLAGS) $(filter-out $(BUILD)/main.o,$(OBJS)) $(EOBJS) $(NET_EOBJS) $(BUILD)/main-net.o -o $@
+# Imagen de prueba de red: kernel + driver e1000 + pila net/, sin servicios ni modelo,
+# con la entrada kernel/entry/probe_net.e.
+$(BUILD)/kernel-net.elf: $(KOBJS) $(NET_EOBJS) $(BUILD)/probe_net.e.o kernel/linker.ld
+	$(LD) $(LDFLAGS) $(KOBJS) $(NET_EOBJS) $(BUILD)/probe_net.e.o -o $@
 
 net-image: $(BUILD)/kernel-net.elf
 	$(PYTHON) scripts/build_hardware_image.py --kernel $(BUILD)/kernel-net.elf --output $(BUILD)/erlanos-net.img --profile net-n0 --name "ErlanOS Red N0"
@@ -151,19 +156,15 @@ run-hardware: hardware-image
 # ---- servicios de usuario: Erlan -> C -> ELF en 0x400000 -> binario plano
 services: $(UBINS)
 
-$(UGEN)/ulib.c $(UGEN)/ulib.h &: services/lib/ulib.e erlan/erlancompiler.py | $(UGEN)
-	$(ERLAN) $< -o $(UGEN)/ulib.c --header $(UGEN)/ulib.h
+# Biblioteca común (services/lib/*.e): arranque, syscalls, ulib, cable de IA y métricas de fuentes.
+ULIB_MODS := crt0 usys ulib ai_wire docfont
+ULIB_GENH := $(patsubst %,$(UGEN)/%.h,$(ULIB_MODS))
+ULIB_OBJS := $(patsubst %,$(UOUT)/%.o,$(ULIB_MODS))
 
-$(UOUT)/crt0.o: services/lib/crt0.c services/lib/usys.h | $(UOUT)
-	$(CC) $(UCFLAGS) -c $< -o $@
+$(UGEN)/%.c $(UGEN)/%.h &: services/lib/%.e erlan/erlancompiler.py | $(UGEN)
+	$(ERLAN) $< -o $(UGEN)/$*.c --header $(UGEN)/$*.h $(EINC_U)
 
-$(UOUT)/ulib.o: $(UGEN)/ulib.c $(UGEN)/ulib.h | $(UOUT)
-	$(CC) $(UCFLAGS) -c $< -o $@
-
-$(UGEN)/ai_wire.c $(UGEN)/ai_wire.h &: services/lib/ai_wire.e erlan/erlancompiler.py | $(UGEN)
-	$(ERLAN) $< -o $(UGEN)/ai_wire.c --header $(UGEN)/ai_wire.h
-
-$(UOUT)/ai_wire.o: $(UGEN)/ai_wire.c $(UGEN)/ai_wire.h erlan/runtime/erlan_rt.h | $(UOUT)
+$(UOUT)/%.o: $(UGEN)/%.c $(ULIB_GENH) erlan/runtime/erlan_rt.h | $(UOUT)
 	$(CC) $(UCFLAGS) -c $< -o $@
 
 # L3 controller is linked with the model process in the M4 prototype.
@@ -177,18 +178,18 @@ $(UOUT)/model/matmul_fast.e.o: UCFLAGS += -mavx2 -mno-fma
 
 $(UGEN)/model/controller.c $(UGEN)/model/controller.h &: mind/controller.e erlan/erlancompiler.py | $(UGEN)
 	mkdir -p $(UGEN)/model
-	$(ERLAN) $< -o $(UGEN)/model/controller.c --header $(UGEN)/model/controller.h
+	$(ERLAN) $< -o $(UGEN)/model/controller.c --header $(UGEN)/model/controller.h $(EINC_U)
 
 $(UGEN)/model/document_client.c $(UGEN)/model/document_client.h &: mind/document_client.e erlan/erlancompiler.py | $(UGEN)
 	mkdir -p $(UGEN)/model
-	$(ERLAN) $< -o $(UGEN)/model/document_client.c --header $(UGEN)/model/document_client.h
+	$(ERLAN) $< -o $(UGEN)/model/document_client.c --header $(UGEN)/model/document_client.h $(EINC_U)
 
 $(BUILD)/document_view.e.o: assets/fonts/font_data.h
 $(BUILD)/workspace_view.e.o: assets/fonts/font_data.h
 $(UGEN)/model/workspace_client.c $(UGEN)/model/workspace_client.h &: mind/workspace_client.e erlan/erlancompiler.py | $(UGEN)
 	mkdir -p $(UGEN)/model
-	$(ERLAN) $< -o $(UGEN)/model/workspace_client.c --header $(UGEN)/model/workspace_client.h
-$(UOUT)/system/document.e.o: assets/fonts/font_data.h services/lib/docfont.h
+	$(ERLAN) $< -o $(UGEN)/model/workspace_client.c --header $(UGEN)/model/workspace_client.h $(EINC_U)
+$(UOUT)/docfont.o: assets/fonts/font_data.h
 
 # Cada servicio: todos los .e de su directorio -> C -> objetos -> ELF -> binario plano.
 define SERVICE_RULES
@@ -198,15 +199,15 @@ $(1)_OBJS  := $$(patsubst services/$(1)/%.e,$$(UOUT)/$(1)/%.e.o,$$($(1)_ESRCS))
 
 $$(UGEN)/$(1)/%.c $$(UGEN)/$(1)/%.h &: services/$(1)/%.e erlan/erlancompiler.py | $$(UGEN)
 	mkdir -p $$(UGEN)/$(1)
-	$$(ERLAN) $$< -o $$(UGEN)/$(1)/$$*.c --header $$(UGEN)/$(1)/$$*.h
+	$$(ERLAN) $$< -o $$(UGEN)/$(1)/$$*.c --header $$(UGEN)/$(1)/$$*.h $$(EINC_U) -Iservices/$(1)
 
-$$(UOUT)/$(1)/%.e.o: $$(UGEN)/$(1)/%.c $$($(1)_GENH) $$(UGEN)/ulib.h $$(UGEN)/ai_wire.h erlan/runtime/erlan_rt.h erlan/runtime/umath.h $$(wildcard services/$(1)/*.h) services/lib/usys.h | $$(UOUT)
+$$(UOUT)/$(1)/%.e.o: $$(UGEN)/$(1)/%.c $$($(1)_GENH) $$(ULIB_GENH) erlan/runtime/erlan_rt.h $$(wildcard services/$(1)/*.h) | $$(UOUT)
 	mkdir -p $$(UOUT)/$(1)
 	$$(CC) $$(UCFLAGS) -Iservices/$(1) -I$$(UGEN)/$(1) -c $$< -o $$@
 
-$$(UOUT)/$(1).elf: $$(UOUT)/crt0.o $$(UOUT)/ulib.o $$(UOUT)/ai_wire.o $$($(1)_OBJS) $$($(1)_EXTRA_OBJS) services/user.ld
+$$(UOUT)/$(1).elf: $$(ULIB_OBJS) $$($(1)_OBJS) $$($(1)_EXTRA_OBJS) services/user.ld
 	$$(LD) -nostdlib -static -z max-page-size=0x1000 -T services/user.ld \
-	    $$(UOUT)/crt0.o $$(UOUT)/ulib.o $$(UOUT)/ai_wire.o $$($(1)_OBJS) $$($(1)_EXTRA_OBJS) -o $$@
+	    $$(ULIB_OBJS) $$($(1)_OBJS) $$($(1)_EXTRA_OBJS) -o $$@
 endef
 $(foreach s,$(SERVICES),$(eval $(call SERVICE_RULES,$(s))))
 

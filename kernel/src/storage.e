@@ -1,13 +1,18 @@
-// D1 block mechanism: one legacy VirtIO block device, one identified GPT data
-// partition. Ring 3 never addresses boot sectors or another disk. No filesystem here.
-extern c "storage_io.h" { fn storage_inw(p: u16) -> u16; fn storage_inl(p: u16) -> u32; fn storage_outw(p: u16,v: u16); fn storage_outl(p: u16,v: u32); }
-extern c "cpu.h" { fn inb(p: u16) -> u8; fn outb(p: u16,v: u8); }
-extern c "mmio.h" { fn mmio_read8(a: u64) -> u8; fn mmio_read16(a: u64) -> u16; fn mmio_write8(a: u64,v: u8); fn mmio_write16(a: u64,v: u16); fn mmio_write32(a: u64,v: u32); fn mmio_write64(a: u64,v: u64); fn cpu_mfence(); fn cpu_pause(); }
-extern c "pmm.h" { fn pmm_alloc_pages(n: u64) -> u64; fn pmm_phys_to_virt(p: u64) -> u64; }
-extern c "pci.h" { fn pci_read32(bus: u64,slot: u64,f: u64,off: u64) -> u32; }
-extern c "pci_io.h" { fn pci_conf1_write32(selector: u32,value: u32); }
-extern c "kmem.h" { fn kmemset(p: u64,v: u8,n: u64); fn kmemcpy(dst: u64,src: u64,n: u64); }
-extern c "serial.h" { fn kprintf(fmt: str,...); }
+// D1 block mechanism: one legacy VirtIO block device or, since 2026-10-26, an NVMe
+// namespace (nvme.e) or a SATA disk through AHCI (ahci.e) when there is no VirtIO; one
+// identified GPT data partition.
+// Ring 3 never addresses boot sectors or another disk. No filesystem here.
+import cpu;
+
+import mmio;
+import pmm;
+import pci;
+import pci_io;
+import kmem;
+import serial;
+import ahci;
+import nvme;
+var disk_kind: u64 = 0;   // 1 = VirtIO legado, 2 = AHCI, 3 = NVMe
 var disk_io: u16 = 0;
 var disk_sectors: u64 = 0;
 var disk_queue: u64 = 0; var disk_queue_phys: u64 = 0;
@@ -29,6 +34,8 @@ fn disk_desc(i: u64,addr: u64,len: u32,flags: u16,next: u16) {
 }
 fn disk_transfer(op: u64,lba: u64,p: ptr<u8>) -> bool {
     if !disk_ready || (op!=4 && lba>=disk_sectors) { return false; }
+    if disk_kind==2 { return ahci_transfer(op,lba,p); }
+    if disk_kind==3 { return nvme_transfer(op,lba,p); }
     mmio_write32(disk_req,op as u32); mmio_write32(disk_req+4,0); mmio_write64(disk_req+8,lba);
     mmio_write8(disk_req+16,255);
     if op==1 { unsafe { kmemcpy(disk_req+512,p as u64,512); } }
@@ -66,12 +73,15 @@ fn disk_probe(bus: u64,slot: u64) -> bool {
     mmio_write16(disk_avail,1); storage_outl(disk_io+8,(disk_queue_phys>>12) as u32);
     disk_sectors=(storage_inl(disk_io+20) as u64)|((storage_inl(disk_io+24) as u64)<<32);
     outb(disk_io+18,7); disk_index=0; disk_ready=true;
+    disk_kind=1;
     kprintf("[storage] virtio blk bus=%d slot=%d sectores=%d\n",bus,slot,disk_sectors);
     return true;
 }
 fn storage_init() {
     volume_sectors=0; disk_ready=false;
     for bus in 0..256 { for slot in 0..32 { if !disk_ready { disk_probe(bus,slot); } } }
+    if !disk_ready && nvme_init() { disk_kind=3; disk_sectors=nvme_sectors(); disk_ready=true; kprintf("[storage] nvme sectores=%d\n",disk_sectors); }
+    if !disk_ready && ahci_init() { disk_kind=2; disk_sectors=ahci_sectors(); disk_ready=true; kprintf("[storage] ahci sectores=%d\n",disk_sectors); }
     if !disk_ready { kprintf("[storage] sin volumen compatible\n"); return; }
     unsafe { if !disk_transfer(0,1,&disk_sector[0]) { return; } }
     let b=disk_sector[..];

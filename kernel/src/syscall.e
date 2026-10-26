@@ -1,42 +1,19 @@
 // L1 — syscalls por `int 0x80`. Convención: rax = número, rdi/rsi/rdx = argumentos,
 // rax = retorno. Todo efecto exige una capability del hilo actual.
 
-extern c "sched.h" {
-    fn sched_current_id() -> u64;
-    fn sched_check_cap(slot: u64, kind: u32, rights: u32) -> bool;
-    fn sched_cap_obj(slot: u64) -> u64;
-    fn sched_yield();
-    fn sched_sleep(ticks: u64);
-    fn sched_exit(code: u64);
-    fn sched_thread_name(id: u64) -> str;
-    fn sched_current_cr3() -> u64;
-}
-extern c "vmm.h" { fn vmm_user_range_ok(cr3: u64, p: u64, len: u64, writable: bool) -> bool; }
-extern c "system.h" {
-    fn system_inspect(metric: u64) -> u64;
-    fn system_set_mode(mode: u64) -> u64;
-    fn system_present();
-    fn system_present_receipt(op: u64, receipt: u64) -> u64;
-    fn system_halo_changed();
-    fn system_document_shown();
-}
-extern c "ipc.h" {
-    fn ipc_send(ep: u64, src: u64, len: u64) -> u64;
-    fn ipc_recv(ep: u64, dst: u64, cap: u64) -> u64;
-}
-extern c "proc.h" {
-    fn proc_map_module(idx: u64) -> u64;
-    fn proc_module_size(idx: u64) -> u64;
-    fn proc_map_anon(id: u64, pages: u64) -> u64;
-}
-extern c "console.h" { fn console_write(p: ptr<u8>, len: u64); fn console_set_halo(state: u64); }
-extern c "document_view.h" { fn document_view(p: ptr<u8>, len: u64) -> bool; }
-extern c "keyboard.h" { fn keyboard_getc() -> u8; fn keyboard_cancelled(clear: bool) -> bool; }
-extern c "pit.h" { fn pit_uptime_ms() -> u64; fn pit_ticks() -> u64; }
-extern c "serial.h" { fn kprintf(fmt: str, ...); fn serial_putc(c: u8); }
-extern c "storage.h" { fn storage_size() -> u64; fn storage_io(op: u64, sector: u64, p: ptr<u8>) -> bool; }
-extern c "pointer.h" { fn pointer_get() -> u64; }
-extern c "workspace_view.h" { fn workspace_view(p: ptr<u8>,len: u64) -> bool; fn workspace_geometry() -> u64; fn workspace_hit(x: u64,y: u64) -> u64; fn desktop_begin(); fn desktop_end(); }
+import sched;
+import vmm;
+import system;
+import ipc;
+import proc;
+import console;
+import document_view;
+import keyboard;
+import pit;
+import serial;
+import storage;
+import pointer;
+import workspace_view;
 
 const SYS_EXIT: u64 = 0;
 const SYS_LOG: u64 = 1;          // (cap, ptr, len)      serial

@@ -7,6 +7,9 @@
 #include "chat.h"
 #include "gguf.h"
 #include "tokenizer.h"
+#include <time.h>
+#include "umath.h"
+u64 host_now_ms(void) { return (u64)clock() * 1000 / CLOCKS_PER_SEC; }
 
 static bool cancel_sticky, cancel_on_output, capture, generating;
 static u64 cancel_checks, cancel_at = UINT64_MAX;
@@ -26,7 +29,7 @@ bool host_cancelled(void) {
     if (++cancel_checks >= cancel_at) cancel_sticky = true;
     return cancel_sticky;
 }
-void host_write(const u8 *p, u64 n) {
+void host_write(u8 *p, u64 n) {
     fwrite(p, 1, (size_t)n, stdout); fflush(stdout);
     if (cancel_on_output && generating && n) cancel_sticky = true;
 }
@@ -58,6 +61,9 @@ static u64 turn(const char *s, u64 max) {
     return n;
 }
 int main(int argc, char **argv) {
+#ifdef ERLAN_MATMUL_FORCE_PORTABLE
+    math_force_portable(true);   /* ruta sin AVX2 (antes, macro de umath.h) */
+#endif
     if (argc < 2) return 2;
     FILE *f = fopen(argv[1], "rb");
     if (!f) return 1;

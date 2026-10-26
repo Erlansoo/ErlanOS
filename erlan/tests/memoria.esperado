@@ -1,0 +1,53 @@
+orden: entra
+orden: sale
+  defer de orden (a=1, b=2 siguen vivas)
+  drop Guardia 2
+  drop Guardia 1
+consumir:
+  consumir recibe 0
+  drop Guardia 0
+  consumir devolvio 0
+condicional:
+  consumir recibe 3
+  drop Guardia 3
+  condicional(mover=1) termina
+  condicional(mover=0) termina
+  drop Guardia 3
+temprano:
+  drop Guardia 4
+  temprano(1)=1
+  h.id=4
+  drop Guardia 4
+  temprano(0)=0
+reasignar:
+  drop Guardia 5
+  reasignar: ahora g=6
+  drop Guardia 6
+compuestos:
+  drop Guardia 0
+  drop Guardia 0
+  compuestos: p.a=7 arr[1]=10
+  drop Guardia 9
+  drop Guardia 10
+  drop Guardia 7
+  drop Guardia 8
+bucle:
+  drop Guardia 100
+  drop Guardia 0
+  drop Guardia 1
+  drop Guardia 101
+  drop Guardia 2
+  bucle: acumulado=102
+  drop Guardia 102
+temporal:
+  drop Guardia 11
+  temporal: despues de la sentencia
+prestamos:
+  prestamos: a.x=2 (s1=2 s2=2 copia=1)
+  prestamos: mayor -> 5, primero -> 5
+  prestamos: n=33 suma=10 a.y=9
+parciales:
+  parciales: a=1 d.b=2
+  parciales: e.a=3 e.b=2
+  parciales: reasigna_ref=16
+fin

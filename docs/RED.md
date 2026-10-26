@@ -35,6 +35,14 @@ para llegar al hito con cero primitivas nuevas de usuario. El kernel normal incl
 
 Primera ejecución: 16 tramas, DHCP en el primer intento, DNS en 210 ms bajo TCG.
 
+## También en VirtualBox (26 de octubre de 2026)
+
+La misma imagen de prueba corre en VirtualBox con su Intel PRO/1000 MT Desktop (82540EM) en
+NAT: enlace a los 5 s, DHCP, DNS por el resolver del anfitrión (fuera de la subred, vía el
+gateway), TCP de 300 KB con SHA-256 verificado y HTTP 200 real. Dos correcciones salieron de
+ahí: esperar `STATUS.LU` antes de transmitir y hacer ARP al siguiente salto del DNS, no al
+DNS. Script, evidencia y límites en [VIRTUALBOX.md](VIRTUALBOX.md).
+
 ## Decisiones (de la revisión adversarial del diseño)
 
 - e1000 (82540EM) y no virtio-net: mismo mapa de registros y descriptores legacy que la

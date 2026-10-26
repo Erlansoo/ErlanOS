@@ -3,50 +3,18 @@
 // real a example.com. Cada etapa deja un marcador verificable en el log serial y una
 // línea en la consola. Es la demostración de "ErlanOS en internet".
 
-extern c "netplat.h" { fn netplat_log(s: str); fn netplat_console(p: ptr<u8>, n: u64); fn netplat_now_ms() -> u64; }
-extern c "wire.h" {
-    fn fmt_str(buf: []u8, pos: u64, s: str) -> u64;
-    fn fmt_u64(buf: []u8, pos: u64, v: u64) -> u64;
-    fn fmt_ip(buf: []u8, pos: u64, ip: u32) -> u64;
-    fn fmt_mac(buf: []u8, pos: u64, m: []u8, off: u64) -> u64;
-    fn fmt_hex8(buf: []u8, pos: u64, v: u8) -> u64;
-    fn ip_make(a: u64, b: u64, c: u64, d: u64) -> u32;
-}
-extern c "netio.h" {
-    fn netio_init();
-    fn netio_my_mac(out: []u8);
-    fn netio_my_ip() -> u32;
-    fn netio_arp_resolve(ip: u32, out: []u8, timeout_ms: u64) -> bool;
-    fn netio_frames_seen() -> u64;
-}
-extern c "dhcp.h" {
-    fn dhcp_run(timeout_ms: u64) -> bool;
-    fn dhcp_ip() -> u32;
-    fn dhcp_mask() -> u32;
-    fn dhcp_gw() -> u32;
-    fn dhcp_dns() -> u32;
-    fn dhcp_lease_secs() -> u32;
-}
-extern c "dns.h" { fn dns_resolve(name: str, server: u32, timeout_ms: u64) -> u32; }
-extern c "tcp.h" {
-    fn tcp_connect(ip: u32, port: u16, timeout_ms: u64) -> bool;
-    fn tcp_send(data: []u8) -> bool;
-    fn tcp_recv(out: []u8, timeout_ms: u64) -> u64;
-    fn tcp_eof() -> bool;
-    fn tcp_close();
-    fn tcp_retransmits() -> u64;
-    fn tcp_discarded() -> u64;
-}
-extern c "sha2.h" {
-    struct Hash { kind: u64; h32: [8]u32; w32: [64]u32; h64: [8]u64; w64: [80]u64; buf: [128]u8; n: u64; total: u64; }
-    fn hash_init(c: ptr<Hash>, kind: u64);
-    fn hash_update(c: ptr<Hash>, data: []u8);
-    fn hash_final(c: ptr<Hash>, out: []u8);
-}
+import netplat;
+import wire;
+import netio;
+import dhcp;
+import dns;
+import tcp;
+import sha2;
 
 const BULK_PORT: u16 = 18765;
 const BULK_UP: u64 = 6000;
 const BULK_DOWN: u64 = 300000;
+const LINK_TIMEOUT_MS: u64 = 10000;
 
 var line: [256]u8;
 var stage_ok: [6]bool;
@@ -166,6 +134,18 @@ fn net_probe_run() {
     p = fmt_mac(line[..], p, mac[..], 0);
     emit(p);
 
+    // 0. Enlace. QEMU lo da por negociado al instante; VirtualBox (82540EM emulado) y el
+    // cobre real tardan segundos tras el reset, y mientras STATUS.LU=0 el 82540EM de
+    // VirtualBox no consume los descriptores TX: la trama se pierde y DD nunca llega.
+    // Comprobado en build/vbox-erlanos (2026-10-26): ARP y DHCP fallaban en los primeros 4 s.
+    let t_link = netplat_now_ms();
+    while !netplat_link_up() && netplat_now_ms() < t_link + LINK_TIMEOUT_MS { netplat_wait_ms(10); }
+    if netplat_link_up() { p = fmt_str(line[..], 0, "enlace arriba en "); }
+    else { p = fmt_str(line[..], 0, "FALLO enlace: sigue abajo tras "); }
+    p = fmt_u64(line[..], p, netplat_now_ms() - t_link);
+    p = fmt_str(line[..], p, "ms");
+    emit(p);
+
     // 1. ARP al gateway de SLIRP (sin dirección propia aún: sender 0.0.0.0, luego 10.0.2.15).
     let gw_guess = ip_make(10, 0, 2, 2);
     var gw_mac: [6]u8;
@@ -205,14 +185,22 @@ fn net_probe_run() {
         emit(p);
     }
 
-    // 3. ARP al servidor DNS con nuestra dirección ya asignada.
+    // 3. ARP al siguiente salto hacia el DNS con nuestra dirección ya asignada. En SLIRP el
+    // DNS (10.0.2.3) está en el segmento; en VirtualBox y en una red real suele estar fuera
+    // (el NAT de VirtualBox entrega el DNS del anfitrión, p. ej. 192.168.0.1) y se llega por
+    // el gateway. Hacer ARP a una IP de otra subred nunca responde: no era un fallo de la NIC.
     var dns_ip = dhcp_dns();
     if dns_ip == 0 { dns_ip = ip_make(10, 0, 2, 3); }
+    let dns_hop = next_hop(dns_ip);
     var dns_mac: [6]u8;
-    if netio_arp_resolve(dns_ip, dns_mac[..], 3000) {
+    if netio_arp_resolve(dns_hop, dns_mac[..], 3000) {
         stage_ok[2] = true;
         p = fmt_str(line[..], 0, "arp ok dns=");
         p = fmt_ip(line[..], p, dns_ip);
+        if dns_hop != dns_ip {
+            p = fmt_str(line[..], p, " via=");
+            p = fmt_ip(line[..], p, dns_hop);
+        }
         p = fmt_str(line[..], p, " mac=");
         p = fmt_mac(line[..], p, dns_mac[..], 0);
         emit(p);

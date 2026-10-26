@@ -2,16 +2,8 @@
 // runtime (L2) y los procesos necesitan vectores. El guardado de estado XSAVE por
 // proceso se implementa en M2 con el scheduler.
 
-extern c "cpu.h" {
-    fn cpu_read_cr0() -> u64;
-    fn cpu_write_cr0(v: u64);
-    fn cpu_read_cr4() -> u64;
-    fn cpu_write_cr4(v: u64);
-    fn cpu_xgetbv(i: u32) -> u64;
-    fn cpu_xsetbv(i: u32, v: u64);
-    fn cpu_cpuid(leaf: u32, sub: u32, reg: u32) -> u32;
-}
-extern c "serial.h" { fn kprintf(fmt: str, ...); }
+import cpu;
+import serial;
 
 const CR0_MP: u64 = 1 << 1;
 const CR0_EM: u64 = 1 << 2;

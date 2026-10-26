@@ -1,26 +1,10 @@
 // L3 prototype, linked into the model process. Only structured IPC can operate L2.
-extern c "platform.h" {
-    fn platform_write(p: ptr<u8>, n: u64);
-    fn platform_halo(state: u64);
-    fn platform_cancelled() -> bool;
-}
-extern c "usys.h" { fn usys(nr: u64, a: u64, b: u64, c: u64) -> u64; }
-extern c "ulib.h" {
-    fn ustrlen(s: str) -> u64;
-    fn ulog(s: str) -> u64;
-    fn ulog_num(s: str, v: u64);
-    fn fmt_str(b: []u8, p: u64, s: str) -> u64;
-    fn fmt_u64(b: []u8, p: u64, v: u64) -> u64;
-    fn usend(slot: u64, b: []u8) -> u64;
-    fn urecv(slot: u64, b: []u8) -> u64;
-}
-extern c "ai_wire.h" {
-    fn ai_get64(b: []u8, off: u64) -> u64;
-    fn ai_put64(b: []u8, off: u64, v: u64);
-    fn ai_encode(b: []u8, id: u64, op: u64);
-}
-extern c "planner.h" { fn model_plan(user: []u8) -> u64; fn model_plan_available() -> bool; }
-extern c "chat.h" { fn model_reset_context(); }
+import platform;
+import usys;
+import ulib;
+import ai_wire;
+import planner;
+import chat;
 
 var request_id: u64 = 0;
 var last_receipt: u64 = 0;

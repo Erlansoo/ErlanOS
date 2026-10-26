@@ -3,37 +3,12 @@
 // Referencia: llama.cpp src/models/qwen35.cpp y Transformers qwen3_next.
 // No se ejecutan el encoder visual ni los bloques auxiliares MTP.
 
-extern c "platform.h" {
-    fn platform_log(s: str); fn platform_now_ms() -> u64;
-    fn platform_yield(); fn platform_cancelled() -> bool;
-}
-extern c "arena.h" {
-    fn arena_f32(n: u64) -> []f32; fn arena_u64(n: u64) -> []u64;
-    fn arena_u32(n: u64) -> []u32; fn arena_used() -> u64; fn arena_size() -> u64;
-}
-extern c "umath.h" { fn ld_f32(a: u64) -> f32; }
-extern c "mathx.h" {
-    fn mx_exp(x: f32) -> f32; fn mx_ln(x: f32) -> f32;
-    fn mx_pow(b: f32, e: f32) -> f32; fn mx_sin(x: f32) -> f32;
-    fn mx_cos(x: f32) -> f32; fn mx_silu(x: f32) -> f32; fn mx_sqrt(x: f32) -> f32;
-}
-extern c "model_math.h" {
-    fn matmul(out: []f32, x: []f32, w: u64, t: u32, rows: u64, cols: u64);
-    fn dequant_row(out: []f32, w: u64, t: u32, row: u64, cols: u64);
-    fn name_layer(buf: []u8, layer: u64, suffix: str) -> u64;
-    fn name_plain(buf: []u8, name: str) -> u64;
-    fn tensor_valid(t: u64, cols: u64, rows: u64, vector: bool, f32_only: bool) -> bool;
-}
-extern c "gguf.h" {
-    fn gguf_find(name: []u8) -> u64; fn gguf_n_tensors() -> u64;
-    fn gguf_tensor_addr(t: u64) -> u64; fn gguf_tensor_type(t: u64) -> u32;
-    fn gguf_n_layers() -> u64; fn gguf_dim() -> u64; fn gguf_hidden() -> u64;
-    fn gguf_n_heads() -> u64; fn gguf_n_kv_heads() -> u64; fn gguf_vocab_n() -> u64;
-    fn gguf_ctx_len() -> u64; fn gguf_eps() -> f32;
-    fn gguf_rope_dim() -> u64; fn gguf_rope_base() -> f32;
-    fn gguf_meta_u64(name: str, fallback: u64) -> u64;
-    fn gguf_meta_f32(name: str, fallback: f32) -> f32;
-}
+import platform;
+import arena;
+import umath;
+import mathx;
+import llama;
+import gguf;
 
 var q35_layers: u64 = 0; var q35_dim: u64 = 0; var q35_hidden: u64 = 0;
 var q35_heads: u64 = 0; var q35_kvheads: u64 = 0; var q35_head: u64 = 0;

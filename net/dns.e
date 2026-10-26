@@ -1,17 +1,8 @@
 // Cliente DNS (RFC 1035) en Erlan: consulta A por UDP y análisis con punteros de compresión.
 
-extern c "netplat.h" { fn netplat_now_ms() -> u64; fn netplat_log(s: str); }
-extern c "wire.h" {
-    fn be16_get(b: []u8, off: u64) -> u16;
-    fn be16_put(b: []u8, off: u64, v: u16);
-    fn be32_get(b: []u8, off: u64) -> u32;
-}
-extern c "netio.h" {
-    fn netio_payload() -> []u8;
-    fn netio_my_ip() -> u32;
-    fn netio_send_udp(src_ip: u32, dst_ip: u32, sport: u16, dport: u16, payload_len: u64) -> bool;
-    fn netio_wait_udp(port: u16, timeout_ms: u64, out: []u8) -> u64;
-}
+import netplat;
+import wire;
+import netio;
 
 const DNS_PORT: u16 = 53;
 const TYPE_A: u16 = 1;

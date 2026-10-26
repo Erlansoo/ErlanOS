@@ -2,14 +2,9 @@
 // del tokenizer y la tabla de tensores. No copia los pesos: trabaja sobre el archivo
 // mapeado en memoria (módulo de Limine en ErlanOS, buffer en host).
 
-extern c "umath.h" {
-    fn ld_u16(a: u64) -> u16;
-    fn ld_u32(a: u64) -> u32;
-    fn ld_u64(a: u64) -> u64;
-    fn ld_f32(a: u64) -> f32;
-}
-extern c "platform.h" { fn platform_log(s: str); }
-extern c "arena.h" { fn arena_u64(n: u64) -> []u64; fn arena_u32(n: u64) -> []u32; fn arena_used() -> u64; fn arena_size() -> u64; }
+import umath;
+import platform;
+import arena;
 
 const GGUF_MAGIC: u32 = 0x46554747;   // "GGUF" little-endian
 const V_STR: u32 = 8;

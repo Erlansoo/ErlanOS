@@ -1,10 +1,9 @@
 // D0 trusted page surface. L2 supplies bounded positioned text; only this
 // renderer chooses pixels. The header/halo is outside the writable page area.
-extern c "fb.h" { struct Fb { base: ptr<u32>; width: u64; height: u64; pitch: u64; rs: u8; gs: u8; bs: u8; }
-    fn fb_rgb(f: ptr<Fb>, r: u8, g: u8, b: u8) -> u32; fn fb_rect(f: ptr<Fb>, x: i64, y: i64, w: i64, h: i64, color: u32); fn fb_pixel(f: ptr<Fb>, x: i64, y: i64, color: u32); }
-extern c "docfont.h" { fn docfont_advance(font: u64, ch: u64) -> u64; fn docfont_alpha(font: u64, ch: u64, x: u64, y: u64) -> u64; }
-extern c "font.h" { fn font_row(ch: u8, row: u64) -> u8; }
-extern c "console.h" { fn console_document_surface(active: bool); fn console_framebuffer() -> ptr<Fb>; }
+import fb;
+import docfont;
+import font;
+import console;
 var doc_pixels: [32768]u8;
 var sheet_x: i64 = 0; var sheet_y: i64 = 88; var sheet_w: i64 = 0; var sheet_h: i64 = 0;
 var page_w: u64 = 0; var page_h: u64 = 0;

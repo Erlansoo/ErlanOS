@@ -2,8 +2,8 @@
 // Las páginas se acceden por el HHDM (dirección física + offset) mientras no haya
 // paginación propia (M2).
 
-extern c "serial.h" { fn kprintf(fmt: str, ...); }
-extern c "panic.h" { fn kpanic(msg: str); }
+import serial;
+import panic;
 
 const PAGE_SIZE: u64 = 4096;
 const LOW_RESERVED: u64 = 0x100000;   // 1 MiB

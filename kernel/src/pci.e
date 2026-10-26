@@ -4,13 +4,11 @@
 // Streaming enumeration has no fixed inventory capacity and no hidden truncation.
 // Register encodings cross-checked against Linux include/uapi/linux/pci_regs.h;
 // implementation is original Erlan (no dependency on Linux code).
-extern c "pci_io.h" {
-    fn pci_conf1_read32(selector: u32) -> u32;
-    fn pci_conf1_write32(selector: u32, value: u32);
-}
-extern c "serial.h" { fn kprintf(fmt: str, ...); }
+import pci_io;
+import serial;
 
-struct PciBar {
+// Datos planos: se copian (@copy), como los registros que describen.
+@copy struct PciBar {
     // 0 absent/base-zero, 1 IO, 2 mem32, 3 mem64, 4 legacy mem20,
     // 5 reserved type, 6 upper half, 7 missing upper half, 8 malformed.
     kind: u64;
@@ -21,7 +19,7 @@ struct PciBar {
     prefetch: bool;
 }
 
-struct PciDevice {
+@copy struct PciDevice {
     present: bool;
     bus: u64;
     slot: u64;
@@ -140,7 +138,8 @@ fn pci_report(d: PciDevice) {
     pci_devices += 1;
     if d.class_code == 3 { pci_displays += 1; }
     if d.class_code == 2 { pci_networks += 1; }
-    if d.vendor == 0x10DE && d.device == 0x1C82 { pci_gp107 += 1; }
+    // GPU objetivo: GTX 1050 Ti (GP107, 1C82) o la RTX 3090 (GA102, 2204) que hay desde octubre de 2026.
+    if d.vendor == 0x10DE && (d.device == 0x1C82 || d.device == 0x2204) { pci_gp107 += 1; }
     if d.vendor == 0x8086 && d.device == 0x15B8 { pci_i219 += 1; }
     if d.vendor == 0x8086 && (d.device == 0x100E || d.device == 0x10D3 || d.device == 0x15B8) && !nic_present {
         // BAR0 de memoria (mem32 o mem64) asignado por el firmware; no se reprograma.

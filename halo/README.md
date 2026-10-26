@@ -58,6 +58,24 @@ Pruebas con el Python de KiCad: `halo\pruebas\test_placa.py` (cobre, dos caras, 
 
 Plan de trabajo por etapas: `docs/HALO-PLAN.md`.
 
+### Icono
+
+La **aureola**: un anillo dorado que flota sobre los tres puntos crema del Halo, en un cuadro café de
+esquinas redondeadas. `lanzador/icono.py` lo dibuja con campos de distancia con signo (cuadro redondeado,
+elipse, círculos) y supermuestreo por pixel (4×4 hasta 64 px, 3×3 en 128 y 256), sin bibliotecas gráficas.
+
+| Salida | Contenido | Quién la usa |
+|---|---|---|
+| `build/halo/halo.ico` | 16, 24, 32, 48, 64, 128 y 256 px, una imagen PNG por tamaño | `construir.ps1` la incrusta en `Halo.exe` (`/win32icon`) |
+| `halo/ui/halo.png` | 64 px | favicon de la página: Edge lo usa como icono de la ventana y de la barra de tareas |
+
+- Cada tamaño se dibuja aparte; en 24 px o menos la aureola y los puntos engordan y se quitan los brillos para que se lean.
+- `construir.ps1` vuelve a dibujar el icono antes de compilar `Halo.exe`.
+- `ui/index.html` pide el favicon como `/halo.png?v=aureola`. Edge guarda los favicons por dirección en el perfil de la ventana
+  (`build/halo/ventana`), así que **al cambiar el icono hay que cambiar ese `?v=`**; el servidor ignora la consulta.
+- Un acceso directo de Windows debe tomar el icono de `Halo.exe,0`: si apunta a `build/halo/halo.ico`, el explorador sigue
+  mostrando el de su caché aunque el archivo cambie. `ie4uinit.exe -show` refresca esa caché.
+
 ### Simulación eléctrica
 
 La pestaña **Simulación** integra ngspice: punto de operación, transitorio y AC,

@@ -1,9 +1,9 @@
 // D0 document engine, owned by the isolated L2 system broker. All units are
 // micrometres; font size is tenths of a point. No model output is executable.
-extern c "ai_wire.h" { fn ai_get64(b: []u8, off: u64) -> u64; fn ai_put64(b: []u8, off: u64, v: u64); }
-extern c "docfont.h" { fn docfont_advance(font: u64, ch: u64) -> u64; }
-extern c "usys.h" { fn usys(nr: u64, a: u64, b: u64, c: u64) -> u64; }
-extern c "ulib.h" { fn ulog(s: str) -> u64; fn ulog_bytes(b: []u8) -> u64; fn ulog_num(s: str, n: u64); }
+import ai_wire;
+import docfont;
+import usys;
+import ulib;
 
 const DOC_MAGIC: u64 = 0x31434f44;
 const STATE_MAGIC: u64 = 0x31444c45;

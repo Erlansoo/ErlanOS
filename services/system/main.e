@@ -1,23 +1,11 @@
 // L2 trusted broker. Only the model/Mind client can send on this private endpoint.
 // Policy and versioned AI messages live here, not in Ring 0.
-extern c "usys.h" { fn usys(nr: u64, a: u64, b: u64, c: u64) -> u64; }
-extern c "ulib.h" {
-    fn ulog(s: str) -> u64;
-    fn ulog_bytes(b: []u8) -> u64;
-    fn fmt_str(b: []u8, p: u64, s: str) -> u64;
-    fn fmt_u64(b: []u8, p: u64, v: u64) -> u64;
-    fn usend(slot: u64, b: []u8) -> u64;
-    fn urecv(slot: u64, b: []u8) -> u64;
-    fn uexit(code: u64);
-}
-extern c "ai_wire.h" {
-    fn ai_get64(b: []u8, off: u64) -> u64;
-    fn ai_put64(b: []u8, off: u64, v: u64);
-    fn ai_validate(b: []u8, last: u64) -> u64;
-}
+import usys;
+import ulib;
+import ai_wire;
 
-extern c "document.h" { fn document_init(); fn document_handle(req: []u8) -> []u8; }
-extern c "workspace.h" { fn workspace_init(); fn workspace_handle(req: []u8) -> []u8; }
+import document;
+import workspace;
 
 fn snapshot(out: []u8) {
     for i in 0..8 { ai_put64(out, 40 + i * 8, usys(14, 7, i, 0)); }

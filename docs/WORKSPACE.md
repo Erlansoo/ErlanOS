@@ -23,6 +23,11 @@ abrirla simultáneamente desde dos sesiones de este lanzador. `make clean` no bo
 Los lanzadores antiguos de pruebas y `gdb` crean imágenes independientes. Usa el
 lanzador D1 para conservar tus documentos. No se ha grabado ningún USB ni disco físico.
 
+El disco de trabajo se atiende por VirtIO-blk (QEMU) o, desde el 26/10/2026, por **AHCI**
+(`kernel/src/ahci.e`): `python scripts/qemu_workspace_test.py --storage ahci` corre la misma
+aceptación D1 con el disco en el controlador SATA de q35, que es lo que hay en VirtualBox
+(`scripts\vbox_erlanos.ps1 -Taller`) y en la placa física.
+
 ## Carpetas y documentos
 
 - **+ Carpeta**: escribe el nombre y pulsa Enter. Escape cancela.

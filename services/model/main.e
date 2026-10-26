@@ -2,29 +2,13 @@
 // Mapea el GGUF (módulo de Limine) con la capability Module, pide memoria con Memory,
 // dibuja con Console, lee teclas con Input. Sin esas capabilities no puede hacer nada.
 
-extern c "platform.h" {
-    fn platform_write(p: ptr<u8>, n: u64);
-    fn platform_log(s: str);
-    fn platform_getkey() -> u8;
-    fn platform_clear_cancel();
-    fn platform_halo(state: u64);
-    fn platform_sleep_ms(ms: u64);
-    fn platform_map_module(idx: u64) -> u64;
-    fn platform_module_size(idx: u64) -> u64;
-    fn platform_map_anon(pages: u64) -> u64;
-}
-extern c "ulib.h" { fn ulog(s: str) -> u64; fn ulog_num(label: str, v: u64); fn uexit(code: u64); }
-extern c "chat.h" {
-    fn model_load(data: u64, size: u64, arena_base: u64, arena_size: u64) -> bool;
-    fn model_chat(user: []u8, max_new: u64) -> u64;
-    fn model_arena_used() -> u64;
-    fn model_warmup() -> bool;
-    fn model_chat_context() -> u64;
-}
-extern c "controller.h" { fn mind_handle(line: []u8) -> bool; }
-extern c "planner.h" { fn model_plan_invalidate(); }
-extern c "document_client.h" { fn document_command(line: []u8) -> bool; fn document_editing() -> bool; fn document_key(c: u8); }
-extern c "workspace_client.h" { fn workspace_client_init(); fn workspace_poll(); fn workspace_key(c: u8) -> bool; fn workspace_command(line: []u8) -> bool; fn workspace_chat_route(line: []u8) -> bool; fn workspace_chat(line: []u8); }
+import platform;
+import ulib;
+import chat;
+import controller;
+import planner;
+import document_client;
+import workspace_client;
 
 const ARENA_PAGES: u64 = 49152;   // 192 MiB, incluido estado recurrente Qwen3.5
 const MAX_LINE: u64 = 240;

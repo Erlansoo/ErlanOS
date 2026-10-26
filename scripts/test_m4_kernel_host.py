@@ -30,13 +30,13 @@ def main():
     # Generate all headers because module declarations include dependent headers.
     for module in sorted((root / "kernel/src").glob("*.e")):
         run([sys.executable, "erlan/erlancompiler.py", module, "-o", gen / f"{module.stem}.c",
-             "--header", gen / f"{module.stem}.h"])
+             "--header", gen / f"{module.stem}.h", "-Ikernel/src", "-Inet", "-Inet/tls"])
     flags = [compiler, "-std=c11", "-O1", "-g", "-Wall", "-Wextra", "-Wno-unused-const-variable",
          "-Wno-unused-parameter", "-Wno-parentheses-equality", f"-I{gen}", "-Itests/m4/stubs", "-Ikernel/src",
-         "-Ierlan/runtime"]
+         "-Ierlan/runtime", "-Iassets/fonts"]
     for name, source, modules in (
-        ("m4-host", "kernel_host.c", ("syscall", "system", "vmm", "console", "fb", "keyboard", "document_view")),
-        ("proc-host", "proc_host.c", ("proc",)),
+        ("m4-host", "kernel_host.c", ("syscall", "system", "vmm", "console", "fb", "keyboard", "document_view", "font", "docfont", "kmem")),
+        ("proc-host", "proc_host.c", ("proc", "kmem")),
     ):
         executable = out / (name + (".exe" if os.name == "nt" else ""))
         run([*flags, f"tests/m4/{source}", *[gen / f"{module}.c" for module in modules],

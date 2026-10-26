@@ -2,15 +2,9 @@
 // salida para servicios. Compositor M4 v0: halo, texto y panel de estado separado.
 // Sólo console_present_status dibuja el panel; el texto nunca invade esa región.
 
-extern c "fb.h" {
-    struct Fb { base: ptr<u32>; width: u64; height: u64; pitch: u64; rs: u8; gs: u8; bs: u8; }
-    fn fb_rgb(f: ptr<Fb>, r: u8, g: u8, b: u8) -> u32;
-    fn fb_pixel(f: ptr<Fb>, x: i64, y: i64, color: u32);
-    fn fb_rect(f: ptr<Fb>, x: i64, y: i64, w: i64, h: i64, color: u32);
-    fn fb_circle(f: ptr<Fb>, cx: i64, cy: i64, r: i64, color: u32);
-}
-extern c "font.h" { fn font_row(ch: u8, row: u64) -> u8; }
-extern c "serial.h" { fn kprintf(fmt: str, ...); }
+import fb;
+import font;
+import serial;
 
 const GLYPH_W: i64 = 8;
 const GLYPH_H: i64 = 16;

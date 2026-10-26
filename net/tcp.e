@@ -4,34 +4,10 @@
 // Límites v1 declarados: sin escalado de ventana, sin SACK, descarta segmentos fuera
 // de orden (el par los retransmite) y no respeta ventanas de envío menores que un MSS.
 
-extern c "netplat.h" {
-    fn netplat_tx(p: ptr<u8>, n: u64) -> bool;
-    fn netplat_rx(p: ptr<u8>, max: u64) -> u64;
-    fn netplat_now_ms() -> u64;
-    fn netplat_wait_ms(ms: u64);
-    fn netplat_log(s: str);
-}
-extern c "wire.h" {
-    fn be16_get(b: []u8, off: u64) -> u16;
-    fn be16_put(b: []u8, off: u64, v: u16);
-    fn be32_get(b: []u8, off: u64) -> u32;
-    fn be32_put(b: []u8, off: u64, v: u32);
-    fn inet_sum(b: []u8, start: u64, len: u64, seed: u32) -> u32;
-    fn inet_csum(b: []u8, start: u64, len: u64, seed: u32) -> u16;
-    fn mac_copy(dst: []u8, doff: u64, src: []u8, soff: u64);
-}
-extern c "netio.h" {
-    fn netio_my_ip() -> u32;
-    fn netio_my_mac(out: []u8);
-    fn netio_arp_resolve(ip: u32, out: []u8, timeout_ms: u64) -> bool;
-    fn next_hop(dst_ip: u32) -> u32;
-    fn handle_background(frame: []u8, len: u64);
-}
-extern c "ipv4.h" {
-    fn ip_parse(frame: []u8, len: u64, my_ip: u32) -> bool;
-    fn ip_last_src() -> u32;
-    fn ip_last_proto() -> u64;
-}
+import netplat;
+import wire;
+import netio;
+import ipv4;
 
 const ST_CLOSED: u64 = 0;
 const ST_SYN_SENT: u64 = 1;

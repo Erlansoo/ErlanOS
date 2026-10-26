@@ -1,11 +1,7 @@
 // Funciones matemáticas del model runtime, en Erlan (sin libm): exp, ln, sin, cos.
 // Precisión suficiente para inferencia en f32.
 
-extern c "umath.h" {
-    fn f32_from_bits(b: u32) -> f32;
-    fn f32_bits(f: f32) -> u32;
-    fn f32_sqrt(x: f32) -> f32;
-}
+import umath;
 
 const LN2: f32 = 0.6931471805599453;
 const LOG2E: f32 = 1.4426950408889634;

@@ -16,8 +16,13 @@ def main():
         if path.is_file(): compiler = str(path)
     if not compiler: raise SystemExit("clang required")
     executable = out / ("xstate.exe" if os.name == "nt" else "xstate")
-    subprocess.run([compiler, "-std=c11", "-O1", "-Wall", "-Wextra", "-Ikernel/src", "-Ierlan/runtime",
-                    "tests/cpu/xstate.c", "-o", str(executable)], cwd=root, check=True)
+    # cpu_init_xstate, cpu_cpuid y cpu_xgetbv vienen de kernel/src/cpu.e (Erlan): se generan y
+    # se enlazan en el host; las instrucciones privilegiadas de cpu.e no se llaman aquí.
+    import sys
+    subprocess.run([sys.executable, "erlan/erlancompiler.py", "kernel/src/cpu.e", "-o", str(out / "cpu.c"),
+                    "--header", str(out / "cpu.h")], cwd=root, check=True)
+    subprocess.run([compiler, "-std=gnu11", "-O1", "-Wall", "-Wextra", "-Wno-parentheses-equality", f"-I{out}", "-Ierlan/runtime",
+                    "tests/cpu/xstate.c", str(out / "cpu.c"), "-o", str(executable)], cwd=root, check=True)
     subprocess.run([str(executable)], cwd=root, check=True)
 
 

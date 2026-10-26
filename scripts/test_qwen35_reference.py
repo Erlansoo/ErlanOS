@@ -34,10 +34,10 @@ def main():
     assert digest == reference["model_sha256"], "reference belongs to a different GGUF"
     out = (root / args.build).resolve(); gen = out / "gen"; gen.mkdir(parents=True, exist_ok=True)
     compiler = shutil.which("clang") or "C:/Program Files/LLVM/bin/clang.exe"
-    modules = ("arena", "mathx", "gguf", "qwen35", "matmul_fast", "llama")
+    modules = ("umath", "arena", "mathx", "gguf", "qwen35", "matmul_fast", "llama")
     for module in modules:
         subprocess.run([sys.executable, "erlan/erlancompiler.py", f"services/model/{module}.e", "-o",
-                        str(gen / f"{module}.c"), "--header", str(gen / f"{module}.h")], cwd=root, check=True)
+                        str(gen / f"{module}.c"), "--header", str(gen / f"{module}.h"), "-Iservices/model", "-Iservices/lib", "-Imind"], cwd=root, check=True)
     exe = out / ("probe.exe" if os.name == "nt" else "probe")
     fast_object = out / "matmul_fast.o"
     subprocess.run([compiler, "-std=c11", "-O3", "-mavx2", "-mno-fma", "-Wno-parentheses-equality",

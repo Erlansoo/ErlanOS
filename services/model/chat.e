@@ -1,32 +1,10 @@
 // Native ChatML: vocabulary-resolved control IDs, without example responses.
 // Qwen3.5 uses the official enable_thinking=false generation suffix.
-extern c "platform.h" {
-    fn platform_write(p: ptr<u8>, n: u64);
-    fn platform_log(s: str);
-    fn platform_now_ms() -> u64;
-    fn platform_halo(state: u64);
-    fn platform_cancelled() -> bool;
-}
-extern c "arena.h" { fn arena_init(b: u64, s: u64); fn arena_used() -> u64; fn arena_u32(n: u64) -> []u32; fn arena_u8(n: u64) -> []u8; }
-extern c "gguf.h" { fn gguf_open(b: u64, s: u64) -> bool; fn gguf_architecture() -> u64; }
-extern c "tokenizer.h" {
-    fn tokenizer_init() -> bool;
-    fn tokenizer_id(text: str) -> u64;
-    fn tokenizer_n_tokens() -> u64;
-    fn tokenizer_encode(text: []u8, out: []u32) -> u64;
-    fn tokenizer_decode(id: u64, out: []u8) -> u64;
-}
-extern c "llama.h" {
-    fn llama_init() -> bool;
-    fn llama_forward(token: u64, pos: u64);
-    fn llama_prefill(token: u64, pos: u64);
-    fn llama_forward_cancelled() -> bool;
-    fn llama_argmax() -> u64;
-    fn llama_ctx() -> u64;
-    fn llama_forward_ms() -> u64;
-    fn llama_forward_count() -> u64;
-    fn llama_reset_context();
-}
+import platform;
+import arena;
+import gguf;
+import tokenizer;
+import llama;
 
 var loaded: bool = false;
 var pos: u64 = 0;

@@ -81,7 +81,7 @@ Eso es "mejor visión de lo que hace": objetos y relaciones, no capturas de pant
 |---|---|---|
 | Arquitectura CPU | x86-64, QEMU q35, UEFI (OVMF) | Depuración con GDB, KVM/WHPX, hardware real después |
 | Bootloader | Limine (protocolo Limine) | Framebuffer, HHDM, memmap y **módulos** listos; el GGUF se carga como módulo de boot, sin filesystem |
-| Kernel L1 | C freestanding, clang + ld.lld | Cero dependencias; se migra función por función a Erlan |
+| Kernel L1 | **Erlan**, compilado a C por `erlancompiler` y a binario por clang + ld.lld | Desde el 26/10/2026 no queda C propio en el kernel ni en los servicios: ensamblador en línea, Limine, `kprintf`, stubs y `_start` están en Erlan ([ERLAN-SISTEMA.md](ERLAN-SISTEMA.md)) |
 | Hardware físico y GPU | Conservar el kernel propio; Linux/Nouveau/Mesa como referencias y bancos de prueba | Decisión del usuario, 2026-09-14. Adaptar interfaces a capabilities y servicios Erlan; no sustituir L1 por Linux. Ver `GPU-PASCAL.md` |
 | Erlan bootstrap | Python -> emite C -> clang | Sin instalar nada nuevo; el bootstrap es desechable; luego self-hosting en Erlan |
 | Erlan IR | EIR propio simple ahora; MLIR sólo cuando llegue GPU | MLIR cuesta horas de build y curva alta; no aporta en CPU-only |

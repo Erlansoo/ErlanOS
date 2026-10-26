@@ -1,19 +1,12 @@
 // Tokenizer BPE a nivel de bytes (estilo GPT-2, como usa SmolLM2) en Erlan.
 // Tablas hash abiertas sobre los strings del GGUF; sin copiar el vocabulario.
 
-extern c "umath.h" { fn ld_u64(a: u64) -> u64; }
-extern c "platform.h" { fn platform_log(s: str); }
-extern c "arena.h" { fn arena_u64(n: u64) -> []u64; fn arena_u32(n: u64) -> []u32; fn arena_u8(n: u64) -> []u8; fn arena_used() -> u64; fn arena_size() -> u64; }
-extern c "gguf.h" {
-    fn gguf_token_kind(id: u64) -> u64;
-    fn gguf_meta_is(name: str, value: str) -> bool;
-    fn gguf_tokens_off() -> u64;
-    fn gguf_tokens_n() -> u64;
-    fn gguf_merges_off() -> u64;
-    fn gguf_merges_n() -> u64;
-}
+import umath;
+import platform;
+import arena;
+import gguf;
 
-extern c "unicode.h" { fn unicode_class(cp: u32) -> u64; }
+import unicode;
 var table_size: u64 = 0;
 var table_mask: u64 = 0;
 var pre_type: u64 = 0; // SmolLM=1, Qwen2=2, Qwen3.5=3

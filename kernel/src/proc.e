@@ -2,23 +2,11 @@
 // de direcciones propio, registro de módulos de datos (p. ej. el modelo GGUF) y mapeo
 // de memoria bajo demanda para los servicios.
 
-extern c "vmm.h" {
-    fn vmm_new_space() -> u64;
-    fn vmm_map(cr3: u64, virt: u64, phys: u64, flags: u64);
-    fn vmm_map_new(cr3: u64, virt: u64, pages: u64, flags: u64) -> u64;
-    fn vmm_translate(cr3: u64, virt: u64) -> u64;
-}
-extern c "pmm.h" {
-    fn pmm_phys_to_virt(phys: u64) -> u64;
-    fn pmm_virt_to_phys(virt: u64) -> u64;
-    fn pmm_free_count() -> u64;
-}
-extern c "kmem.h" { fn kmemcpy(dst: u64, src: u64, n: u64); }
-extern c "sched.h" {
-    fn sched_create(name: str, rip: u64, rsp: u64, cr3: u64, user: bool) -> u64;
-    fn sched_current_cr3() -> u64;
-}
-extern c "serial.h" { fn kprintf(fmt: str, ...); }
+import vmm;
+import pmm;
+import kmem;
+import sched;
+import serial;
 
 const USER_BASE: u64 = 0x400000;
 const USER_STACK_TOP: u64 = 0x1000000;   // 16 MiB

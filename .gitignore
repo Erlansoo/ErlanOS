@@ -12,6 +12,7 @@ data/
 # configuracion local de cada asistente (hooks, permisos): no se comparte
 .claude/settings.local.json
 .codex/
+opencode.json
 
 # lanzador compilado con halo/lanzador/construir.ps1
 Halo.exe
@@ -19,6 +20,10 @@ Halo.exe
 # estado por proyecto que escriben el Halo y sus motores (actual.json, chats.json, historial)
 .halo/
 
+# proyectos de electrónica hechos con Halo: son privados y nunca entran al repo;
+# sólo el ejemplo público parpadeo555 (los privados viven en build/halo/proyectos/)
+halo/proyectos/*
+!halo/proyectos/parpadeo555/
 
 # derivados de la documentación de cada proyecto (LaTeX y figuras exportadas por kicad-cli)
 **/docs/.build/

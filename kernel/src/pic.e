@@ -1,12 +1,8 @@
-// L1 — controlador de interrupciones 8259 (PIC legado). Suficiente para M1;
-// el APIC llega con SMP en M2+.
+// L1 — controlador de interrupciones 8259 (PIC legado). Atiende el arranque hasta que apic.e
+// pasa a modo IOAPIC (`pic_disable`); sin LAPIC/IOAPIC (probe_hardware) sigue mandando él.
 
-extern c "cpu.h" {
-    fn outb(port: u16, v: u8);
-    fn inb(port: u16) -> u8;
-    fn io_wait();
-}
-extern c "serial.h" { fn kprintf(fmt: str, ...); }
+import cpu;
+import serial;
 
 const PIC1_CMD: u16 = 0x20;
 const PIC1_DATA: u16 = 0x21;
@@ -28,6 +24,9 @@ fn pic_init() {
     outb(PIC2_DATA, 0xFF);
     kprintf("[pic] remapeado a 32..47, habilitados irq0 e irq1\n");
 }
+
+// Enmascara las 16 líneas: desde aquí las interrupciones van por el IOAPIC y el LAPIC.
+fn pic_disable() { outb(PIC1_DATA, 0xFF); outb(PIC2_DATA, 0xFF); }
 
 fn pic_eoi(irq: u8) {
     if irq >= 8 { outb(PIC2_CMD, PIC_EOI); }

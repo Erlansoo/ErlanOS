@@ -7,6 +7,15 @@
 #include "chat.h"
 #include "planner.h"
 
+/* Ganchos de la plataforma de anfitrión (services/model/host/platform.e, en Erlan): la salida,
+ * el registro y el reloj pasan por aquí porque stdout/stderr y CLOCKS_PER_SEC son macros de C. */
+#include <time.h>
+#include "umath.h"
+void host_write(u8 *p, u64 n) { fwrite(p, 1, (size_t)n, stdout); fflush(stdout); }
+void host_log(const char *s) { fprintf(stderr, "[model] %s\n", s); }
+u64 host_now_ms(void) { return (u64)clock() * 1000 / CLOCKS_PER_SEC; }
+bool host_cancelled(void) { return false; }
+
 static u64 plan_request(const char *text) {
     erlan_su8 request = {(u8 *)text, strlen(text)};
     u64 start = model_stats_ms();
@@ -75,6 +84,10 @@ static int self_test(void) {
 }
 
 int main(int argc, char **argv) {
+#ifdef ERLAN_MATMUL_FORCE_PORTABLE
+    math_force_portable(true);   /* ruta sin AVX2 (antes, macro de umath.h) */
+#endif
+
     if (argc < 3) {
         fprintf(stderr, "usage: %s model.gguf request [request ...] | --self-test\n", argv[0]);
         return 2;

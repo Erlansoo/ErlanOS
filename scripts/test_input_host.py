@@ -9,10 +9,14 @@ import sys
 root = Path(__file__).resolve().parents[1]
 out = root / 'build/input-host'; out.mkdir(parents=True, exist_ok=True)
 cc = shutil.which('clang') or 'C:/Program Files/LLVM/bin/clang.exe'
-for name in ('platform', 'ulib', 'chat', 'controller', 'planner', 'gguf', 'document_client', 'workspace_client'):
+# Un stub por cada módulo Erlan que main.e importa, directa o transitivamente (y platform.h).
+names = {'platform'}
+for d in ('services/lib', 'services/model', 'mind'):
+    names |= {p.stem for p in (root / d).glob('*.e')}
+for name in sorted(names):
     (out / f'{name}.h').write_text('#include "frontend_stubs.h"\n', encoding='ascii')
 subprocess.run([sys.executable, 'erlan/erlancompiler.py', 'services/model/main.e',
-                '-o', str(out / 'service.c')], cwd=root, check=True)
+                '-o', str(out / 'service.c'), '-Iservices/lib', '-Iservices/model', '-Imind'], cwd=root, check=True)
 flags = [cc, '-std=c11', '-O2', '-Wno-parentheses-equality', f'-I{out}',
          '-Itests/model/input_stubs', '-Ierlan/runtime']
 subprocess.run([*flags, '-Dmain=model_service_entry', '-c', str(out / 'service.c'),

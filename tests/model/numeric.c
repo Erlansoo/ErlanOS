@@ -198,6 +198,10 @@ static void replay(const char *model, const char *dump, bool prefill) {
 }
 
 int main(int argc, char **argv) {
+#ifdef ERLAN_MATMUL_FORCE_PORTABLE
+    math_force_portable(true);   /* ruta sin AVX2 (antes, macro de umath.h) */
+#endif
+
     if (argc >= 3) replay(argv[1], argv[2], argc >= 4 && strcmp(argv[3], "prefill") == 0);
     else {
         check_cpu_guard();

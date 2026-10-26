@@ -23,6 +23,17 @@ nativa para que una IA pueda observar, medir, modificar y verificar software.
 | macros | `comptime { ... }` |
 | `#define REG (*(volatile u32*)0x...)` | `register UART0 { base: 0x...; TX: u32 @ 0x00; }` |
 
+## Decisión 2026-10-26: modelo de memoria de Rust desde el día cero
+Erlan adopta el modelo completo de Rust (propiedad, movimiento, `drop`, préstamos `&`/`&mut`, lifetimes,
+`Send`/`Sync`, reglas de aliasing de `unsafe`), con la documentación de Rust como especificación de partida.
+No es opcional ni una versión reducida: el sistema tiene que ser robusto desde el día cero.
+Detalle, referencias y orden de trabajo: [ERLAN-REVISION-MEJORAS.md](ERLAN-REVISION-MEJORAS.md).
+
+**Primera rebanada hecha (misma noche):** propiedad y movimiento (structs se mueven; `@copy` los copia),
+`@drop` con el orden de liberación de Rust, `&T`/`&mut T` con comprobación de préstamos por flujo (NLL)
+sobre una IR de flujo de control equivalente al MIR, elisión de lifetimes y errores con línea y columna.
+Qué hay, qué se adaptó y qué falta: [ERLAN-MEMORIA.md](ERLAN-MEMORIA.md).
+
 ## Nuevo, específico de ErlanOS (v1+, no en v0)
 - Autoridad y efectos: `cap<File.Read>`, `cap<Device.Audio.Write>`, `secret<T>`, `tainted<T>`, efectos `pure io network device unsafe`.
 - Tensores con shape/layout/placement: `tensor<f16, [B, T, 4096], layout=row_major, memory=auto>`.
@@ -51,9 +62,15 @@ nativa para que una IA pueda observar, medir, modificar y verificar software.
    puede devolver `&local` ni una rebanada de un array local; literal-op-literal se evalúa en
    64 bits (`137 << 40` no desborda). `str` se castea como puntero sólo en `unsafe`.
 5. `rmsnorm` ya compila y da resultado correcto en `erlan/tests/basics.e`; se enlaza al model runtime en M5.
-6. Pendiente v0.x: literales de array, `pub` para exportar globales, `T?` opcional, `Result<T,E>` + `try`, métodos sobre struct, genéricos simples,
+6. Modelo de memoria de Rust, primera rebanada: `@copy`, `@drop`, `&T`, `&mut T`, IR tipo MIR,
+   comprobación de movimientos y préstamos (NLL). **Hecho (2026-10-26).** Ver [ERLAN-MEMORIA.md](ERLAN-MEMORIA.md).
+7. Programación de sistemas: `import`, `asm` en `unsafe` y a nivel de módulo, funciones variádicas,
+   `@noreturn`/`@section`/`@used`/`@volatile`, literales de array, `ptr<void>`, datos de C con
+   `extern c { let }`, `f as u64`. Con esto el kernel, los servicios y la red quedaron **enteramente en
+   Erlan**. **Hecho (2026-10-26).** Ver [ERLAN-SISTEMA.md](ERLAN-SISTEMA.md).
+8. Pendiente v0.x: lifetimes explícitos, slices como préstamos, `pub` para constantes compartidas, `pub` para exportar globales, `T?` opcional, `Result<T,E>` + `try`, métodos sobre struct, genéricos simples,
    `comptime`, `register`/`mmio`, tipos `f16`/`bf16`.
-7. Cuando el subconjunto sea suficiente, `erlancompiler` se reescribe en Erlan (self-hosting).
+9. Cuando el subconjunto sea suficiente, `erlancompiler` se reescribe en Erlan (self-hosting).
 
 ## Ejemplo (ya compila)
 ```erlan

@@ -2,12 +2,9 @@
 // tomada del PMM. Suficiente para estructuras del kernel; el model runtime (L2)
 // usará su propio arena de tensores.
 
-extern c "serial.h" { fn kprintf(fmt: str, ...); }
-extern c "panic.h" { fn kpanic(msg: str); }
-extern c "pmm.h" {
-    fn pmm_alloc_pages(n: u64) -> u64;
-    fn pmm_phys_to_virt(phys: u64) -> u64;
-}
+import serial;
+import panic;
+import pmm;
 
 const HEAP_INITIAL_PAGES: u64 = 4096;    // 16 MiB
 const HEAP_ALIGN: u64 = 16;

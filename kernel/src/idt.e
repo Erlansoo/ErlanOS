@@ -1,19 +1,20 @@
 // L1 — Interrupt Descriptor Table y despacho de excepciones, IRQs y syscalls.
 // Los stubs en ensamblador (isr_stubs.c) guardan los registros y llaman a isr_dispatch.
 
-extern c "cpu.h" {
-    fn cpu_lidt(base: u64, limit: u16);
-    fn cpu_read_cr2() -> u64;
-}
-extern c "isr.h" { fn isr_stub_addr(n: u64) -> u64; }
-extern c "serial.h" { fn kprintf(fmt: str, ...); }
-extern c "panic.h" { fn kpanic(msg: str); }
-extern c "pic.h" { fn pic_eoi(irq: u8); }
-extern c "pit.h" { fn pit_tick(); }
-extern c "keyboard.h" { fn keyboard_irq(); }
-extern c "pointer.h" { fn pointer_irq(); }
-extern c "sched.h" { fn sched_tick(); }
-extern c "syscall.h" { fn syscall_dispatch(nr: u64, a: u64, b: u64, c: u64) -> u64; }
+import cpu;
+import isr_stubs;
+import serial;
+import panic;
+import pic;
+import pit;
+import keyboard;
+import pointer;
+import sched;
+import syscall;
+import apic;
+import ahci;
+import nvme;
+import i8042;
 
 struct IdtEntry {
     off_lo: u16;
@@ -116,11 +117,12 @@ fn isr_dispatch(f: ptr<IntFrame>) {
     if f.vector < IRQ_BASE + 16 {
         let irq = f.vector - IRQ_BASE;
         // EOI primero: el handler puede cambiar de hilo y no volver hasta mucho después.
-        pic_eoi(irq as u8);
+        // En modo IOAPIC la interrupción vino por el LAPIC; en modo PIC, por el 8259.
+        if apic_ioapic_mode() { apic_eoi(); } else { pic_eoi(irq as u8); }
         match irq {
             0 => { pit_tick(); sched_tick(); }
-            1 => { keyboard_irq(); }
-            12 => { pointer_irq(); }
+            1 | 12 => { i8042_irq(); }
+            7 | 15 => { }                     // espurias del 8259 al enmascararlo
             _ => { kprintf("[int] irq %d sin handler\n", irq); }
         }
         return;
@@ -129,5 +131,13 @@ fn isr_dispatch(f: ptr<IntFrame>) {
         f.rax = syscall_dispatch(f.rax, f.rdi, f.rsi, f.rdx);
         return;
     }
+    if f.vector == 48 {
+        // Tick del sistema por el temporizador del LAPIC (apic_timer_start enmascaró la IRQ0).
+        apic_eoi(); apic_timer_irq(); pit_tick(); sched_tick();
+        return;
+    }
+    if f.vector == 49 { apic_eoi(); ahci_irq(); return; }
+    if f.vector == 50 { apic_eoi(); nvme_irq(); return; }
+    if f.vector == 255 { return; }     // espurio del LAPIC: sin EOI
     kprintf("[int] vector %d ignorado\n", f.vector);
 }

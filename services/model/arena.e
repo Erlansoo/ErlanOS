@@ -2,7 +2,7 @@
 // (memoria anónima pedida al kernel, o malloc en host). Nunca libera: el runtime
 // reserva todo al cargar el modelo.
 
-extern c "platform.h" { fn platform_log(s: str); }
+import platform;
 
 var base: u64 = 0;
 var size: u64 = 0;

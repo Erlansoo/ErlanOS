@@ -1,9 +1,8 @@
 // Native document intent adapter. Language selects typed operations, never code.
-extern c "ai_wire.h" { fn ai_get64(b: []u8, off: u64) -> u64; fn ai_put64(b: []u8, off: u64, v: u64); }
-extern c "ulib.h" { fn usend(slot: u64, b: []u8) -> u64; fn urecv(slot: u64, b: []u8) -> u64; fn ustrlen(s: str) -> u64;
-    fn fmt_str(b: []u8, p: u64, s: str) -> u64; fn fmt_u64(b: []u8, p: u64, n: u64) -> u64; fn ulog_bytes(b: []u8) -> u64; }
-extern c "platform.h" { fn platform_write(p: ptr<u8>, n: u64); fn platform_halo(state: u64); fn platform_clear_cancel(); }
-extern c "chat.h" { fn model_document_draft(user: []u8) -> []u8; fn model_chat_status() -> u64; }
+import ai_wire;
+import ulib;
+import platform;
+import chat;
 var dc_id: u64 = 0; var dc_revision: u64 = 0; var dc_receipt: u64 = 0;
 var dc_reply: [256]u8;
 var dc_edit: bool = false; var dc_open: bool = false;

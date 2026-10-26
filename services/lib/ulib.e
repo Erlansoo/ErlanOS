@@ -1,6 +1,6 @@
 // Biblioteca mínima de usuario para servicios de ErlanOS (L2), en Erlan.
 
-extern c "usys.h" { fn usys(nr: u64, a: u64, b: u64, c: u64) -> u64; }
+import usys;
 
 const SYS_EXIT: u64 = 0;
 const SYS_LOG: u64 = 1;

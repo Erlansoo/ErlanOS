@@ -1,15 +1,10 @@
 // L1 — primitivas mecánicas de M4. Las decisiones y el protocolo AI viven en L2.
-extern c "pit.h" { fn pit_uptime_ms() -> u64; }
-extern c "pmm.h" { fn pmm_free_count() -> u64; fn pmm_total_count() -> u64; }
-extern c "sched.h" { fn sched_live_count() -> u64; fn sched_switches() -> u64; }
-extern c "syscall.h" { fn syscall_denied_count() -> u64; }
-extern c "serial.h" { fn kprintf(fmt: str, ...); }
-extern c "console.h" {
-    fn console_set_mode(mode: u64);
-    fn console_present_status(mode: u64, revision: u64, uptime: u64, free: u64,
-                              total: u64, threads: u64, switches: u64, denied: u64,
-                              last_op: u64, last_receipt: u64);
-}
+import pit;
+import pmm;
+import sched;
+import syscall;
+import serial;
+import console;
 
 const ERR_ARG: u64 = 0xFFFFFFFFFFFFFFFE;
 var mode: u64 = 0;

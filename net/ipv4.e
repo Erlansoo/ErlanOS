@@ -2,15 +2,7 @@
 // Sin fragmentación ni opciones. Los resultados del análisis quedan en globales
 // del módulo (Erlan v0 no devuelve structs por referencia de forma cómoda).
 
-extern c "wire.h" {
-    fn be16_get(b: []u8, off: u64) -> u16;
-    fn be16_put(b: []u8, off: u64, v: u16);
-    fn be32_get(b: []u8, off: u64) -> u32;
-    fn be32_put(b: []u8, off: u64, v: u32);
-    fn inet_sum(b: []u8, start: u64, len: u64, seed: u32) -> u32;
-    fn inet_csum(b: []u8, start: u64, len: u64, seed: u32) -> u16;
-    fn mac_copy(dst: []u8, doff: u64, src: []u8, soff: u64);
-}
+import wire;
 
 const ETH_HDR: u64 = 14;
 const IP_HDR: u64 = 20;

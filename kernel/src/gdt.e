@@ -1,12 +1,8 @@
 // L1 — Global Descriptor Table y TSS. En modo largo los segmentos son planos; la GDT
 // define privilegios (Ring 0 / Ring 3) y el TSS da la pila de kernel al entrar desde Ring 3.
 
-extern c "cpu.h" {
-    fn cpu_lgdt(base: u64, limit: u16);
-    fn cpu_reload_segments(code: u16, data: u16);
-    fn cpu_ltr(sel: u16);
-}
-extern c "serial.h" { fn kprintf(fmt: str, ...); }
+import cpu;
+import serial;
 
 const GDT_KCODE: u16 = 0x08;
 const GDT_KDATA: u16 = 0x10;

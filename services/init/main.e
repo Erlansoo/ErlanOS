@@ -1,20 +1,8 @@
 // init: primer servicio de usuario de ErlanOS (L2). Demuestra Ring 3, capabilities,
 // estado SSE preservado entre cambios de contexto e IPC hacia `echo`.
 
-extern c "usys.h" { fn usys(nr: u64, a: u64, b: u64, c: u64) -> u64; }
-extern c "ulib.h" {
-    fn ulog(s: str) -> u64;
-    fn ulog_num(label: str, v: u64);
-    fn ulog_bytes(b: []u8) -> u64;
-    fn fmt_str(buf: []u8, pos: u64, s: str) -> u64;
-    fn fmt_u64(buf: []u8, pos: u64, v: u64) -> u64;
-    fn uexit(code: u64);
-    fn uyield();
-    fn usleep_ms(ms: u64);
-    fn ugetpid() -> u64;
-    fn uuptime_ms() -> u64;
-    fn usend(slot: u64, b: []u8) -> u64;
-}
+import usys;
+import ulib;
 
 fn main() {
     ulog("hola desde Ring 3");

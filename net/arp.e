@@ -1,12 +1,6 @@
 // ARP (RFC 826) sobre Ethernet II, en Erlan. Construcción y análisis de tramas.
 
-extern c "wire.h" {
-    fn be16_get(b: []u8, off: u64) -> u16;
-    fn be16_put(b: []u8, off: u64, v: u16);
-    fn be32_get(b: []u8, off: u64) -> u32;
-    fn be32_put(b: []u8, off: u64, v: u32);
-    fn mac_copy(dst: []u8, doff: u64, src: []u8, soff: u64);
-}
+import wire;
 
 const ETH_HDR: u64 = 14;
 const ETHERTYPE_ARP: u16 = 0x0806;

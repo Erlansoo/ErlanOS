@@ -203,7 +203,12 @@ class QemuSession:
         if getattr(self.args,'workspace_disk',None):
             at=command.index('format=raw,file=disk.img')
             command[at]='if=none,id=osdisk,format=raw,cache=writeback,file='+str(Path(self.args.workspace_disk).resolve())
-            command += ['-device','virtio-blk-pci,drive=osdisk,disable-modern=on,serial=ERLANOS-D1']
+            if getattr(self.args,'storage','virtio')=='ahci':
+                command += ['-device','ide-hd,drive=osdisk,bus=ide.0,serial=ERLANOS-D1']
+            elif getattr(self.args,'storage','virtio')=='nvme':
+                command += ['-device','nvme,drive=osdisk,serial=ERLANOS-D1']
+            else:
+                command += ['-device','virtio-blk-pci,drive=osdisk,disable-modern=on,serial=ERLANOS-D1']
         self.result["qemu_command"] = command
         self.stderr_file = self.stderr_path.open("w", encoding="utf-8")
         self.proc = subprocess.Popen(command, cwd=self.directory, stdin=subprocess.PIPE,
@@ -410,6 +415,8 @@ def common_arguments(parser: argparse.ArgumentParser):
     parser.add_argument("--memory", default="4G", help="Guest RAM, in QEMU syntax (default: 4G)")
     parser.add_argument("--model", type=Path, help="Select one GGUF instead of the configured model")
     parser.add_argument("--config", type=Path, help="Private Limine configuration or template for --model")
+    parser.add_argument("--storage", choices=("virtio", "ahci", "nvme"), default="virtio",
+                        help="Bus del disco de trabajo: virtio-blk legado o SATA por el AHCI ICH9 de q35 (ahci.e)")
 
 
 def check_receipt(found: list[dict[str, int]], expected: dict, previous: dict | None):

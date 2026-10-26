@@ -27,23 +27,26 @@ def main():
     def run(parts):
         subprocess.run([str(p) for p in parts], cwd=root, check=True)
 
-    run([sys.executable, "erlan/erlancompiler.py", "kernel/src/pci.e", "-o", gen / "pci.c",
-         "--header", gen / "pci.h"])
+    # pci.e importa pci_io y serial: se generan sus headers (sin compilar su C en el host;
+    # pci_host.c aporta las funciones de puerto sintéticas y kprintf).
+    for module in ("pci", "pci_io", "serial", "cpu"):
+        run([sys.executable, "erlan/erlancompiler.py", f"kernel/src/{module}.e", "-o", gen / f"{module}.c",
+             "--header", gen / f"{module}.h", "-Ikernel/src"])
     executable = out / ("pci-host.exe" if os.name == "nt" else "pci-host")
     run([clang, "-std=c11", "-O2", "-g", "-Wall", "-Wextra", "-Werror",
-         "-Wno-parentheses-equality", f"-I{gen}", "-Itests/pci/stubs", "-Ikernel/src",
+         "-Wno-parentheses-equality", f"-I{gen}", "-Ikernel/src",
          "-Ierlan/runtime", "tests/pci/pci_host.c", gen / "pci.c", "-o", executable])
     run([executable])
-    assembly = out / "shim.s"
-    run([clang, "--target=x86_64-unknown-none-elf", "-std=c11", "-O2", "-S",
-         "-ffreestanding", "-mno-red-zone", "-Ikernel/src", "-Ierlan/runtime",
-         "tests/pci/shim_probe.c", "-o", assembly])
-    # The native shim contains privileged instructions; it is compiled but is
-    # never executed by a Windows/Linux host test process. See audit below.
+    # El shim privilegiado real es kernel/src/pci_io.e (Erlan): se compila a ensamblador con
+    # las opciones del kernel y se audita; nunca se ejecuta en el anfitrión.
+    assembly = out / "pci_io.s"
+    run([clang, "--target=x86_64-unknown-none-elf", "-std=gnu11", "-O2", "-S",
+         "-ffreestanding", "-mno-red-zone", f"-I{gen}", "-Ikernel/src", "-Ierlan/runtime",
+         "-Wno-parentheses-equality", gen / "pci_io.c", "-o", assembly])
     sys.path.insert(0, str(root / "tests/pci"))
     from shim_audit import audit
-    audit(assembly)
-    audit(assembly, symbol="pci_test_shim_write", write_value=0x0ABCDEF0)
+    audit(assembly, symbol="pci_conf1_read32")
+    audit(assembly, symbol="pci_conf1_write32", write_value=0x0ABCDEF0)
     print(f"PASS PCI host suite; assembly audit: {assembly}")
 
 

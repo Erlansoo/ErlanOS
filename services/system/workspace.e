@@ -1,18 +1,9 @@
 // D1 application broker. Native documents, folders and project conversations.
-extern c "workspace_store.h" {
-    struct WsNode { parent: u64; kind: u64; length: u64; sector: u64; name_len: u64; name: [80]u8; }
-    fn workspace_mount(); fn workspace_count() -> u64; fn workspace_node(id: u64) -> ptr<WsNode>;
-    fn workspace_available() -> u64; fn workspace_error() -> u64;
-    fn workspace_clear_error();
-    fn workspace_find(parent: u64,name: []u8) -> u64;
-    fn workspace_put(id: u64,parent: u64,kind: u64,name: []u8,data: []u8) -> u64;
-    fn workspace_read(id: u64,out: []u8) -> u64;
-    fn ws_copy(dst: []u8,src: []u8); fn ws_zero(b: []u8); fn ws_same(a: []u8,b: []u8) -> bool;
-}
-extern c "document.h" { fn document_snapshot() -> []u8; fn document_identity() -> u64; fn document_restore(b: []u8) -> bool; fn doc_text_valid(b: []u8,title: bool) -> bool; }
-extern c "ai_wire.h" { fn ai_get64(b: []u8,p: u64) -> u64; fn ai_put64(b: []u8,p: u64,v: u64); }
-extern c "usys.h" { fn usys(nr: u64,a: u64,b: u64,c: u64) -> u64; }
-extern c "ulib.h" { fn ulog(s: str) -> u64; fn ulog_num(s: str,n: u64); }
+import workspace_store;
+import document;
+import ai_wire;
+import usys;
+import ulib;
 var wx_visible: bool=false; var wx_folder: u64=0; var wx_project: u64=0; var wx_epoch: u64=0;
 var wx_selected: u64=0; var wx_offset: u64=0; var wx_dialog: u64=0; var wx_target: u64=0;
 var wx_name: [80]u8; var wx_name_n: u64=0; var wx_status: u64=0;

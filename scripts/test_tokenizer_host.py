@@ -23,13 +23,13 @@ def main():
 
     def run(command): subprocess.run([str(p) for p in command], cwd=root, check=True)
 
-    for module in ("arena", "gguf", "unicode", "tokenizer"):
+    for module in ("umath", "arena", "gguf", "unicode", "tokenizer"):
         run([sys.executable, "erlan/erlancompiler.py", f"services/model/{module}.e", "-o", out / f"{module}.c",
-             "--header", out / f"{module}.h"])
+             "--header", out / f"{module}.h", "-Iservices/model", "-Iservices/lib", "-Imind"])
     executable = out / ("tokenizer.exe" if os.name == "nt" else "tokenizer")
     run([compiler, "-std=c11", "-O2", "-Wall", "-Wno-unused-const-variable", "-Wno-unused-parameter",
          "-Wno-unused-variable", "-Wno-parentheses-equality", "-Itests/model/stubs", f"-I{out}", "-Ierlan/runtime",
-         "tests/model/tokenizer.c", *[out / f"{m}.c" for m in ("arena", "gguf", "unicode", "tokenizer")], "-o", executable])
+         "tests/model/tokenizer.c", *[out / f"{m}.c" for m in ("umath", "arena", "gguf", "unicode", "tokenizer")], "-o", executable])
     run([executable, (root / args.model).resolve()])
 
 

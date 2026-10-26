@@ -4,18 +4,11 @@
 // El llamador debe invalidar este cache antes de model_chat o de model_load,
 // y reiniciar la posicion del chat antes de volver a model_chat.
 
-extern c "chat.h" { fn model_loaded() -> bool; }
-extern c "platform.h" { fn platform_cancelled() -> bool; }
-extern c "gguf.h" { fn gguf_bos() -> u64; fn gguf_architecture() -> u64; }
-extern c "tokenizer.h" { fn tokenizer_encode(text: []u8, out: []u32) -> u64; }
-extern c "llama.h" {
-    fn llama_forward(token: u64, pos: u64);
-    fn llama_prefill(token: u64, pos: u64);
-    fn llama_forward_cancelled() -> bool;
-    fn llama_logit(i: u64) -> f32;
-    fn llama_ctx() -> u64;
-    fn llama_vocab() -> u64;
-}
+import chat;
+import platform;
+import gguf;
+import tokenizer;
+import llama;
 
 const PLAN_MAX_INPUT: u64 = 160;
 const PLAN_MAX_TOKENS: u64 = 192;

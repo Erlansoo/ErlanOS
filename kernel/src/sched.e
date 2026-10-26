@@ -1,28 +1,15 @@
 // L1 — hilos y scheduler determinista (round-robin por quantum del PIT).
 // En M2 proceso == hilo. Clases de prioridad (REALTIME, INTERACTIVE, AI_*) llegan en M3+.
 
-extern c "cpu.h" {
-    fn cpu_xsave(area: u64);
-    fn cpu_xrstor(area: u64);
-    fn cpu_init_xstate(area: u64);
-    fn cpu_hlt();
-    fn cpu_sti();
-}
-extern c "switch.h" {
-    fn switch_context(old_rsp: ptr<u64>, new_rsp: u64);
-    fn thread_trampoline_addr() -> u64;
-}
-extern c "pmm.h" {
-    fn pmm_alloc_page() -> u64;
-    fn pmm_alloc_pages(n: u64) -> u64;
-    fn pmm_phys_to_virt(phys: u64) -> u64;
-}
-extern c "kmem.h" { fn kmemset(dst: u64, v: u8, n: u64); }
-extern c "vmm.h" { fn vmm_switch(cr3: u64); fn vmm_kernel_cr3() -> u64; }
-extern c "gdt.h" { fn tss_set_rsp0(rsp: u64); fn gdt_user_code() -> u64; fn gdt_user_data() -> u64; }
-extern c "pit.h" { fn pit_ticks() -> u64; }
-extern c "serial.h" { fn kprintf(fmt: str, ...); }
-extern c "panic.h" { fn kpanic(msg: str); }
+import cpu;
+import switch;
+import pmm;
+import kmem;
+import vmm;
+import gdt;
+import pit;
+import serial;
+import panic;
 
 const MAX_THREADS: u64 = 32;
 const MAX_CAPS: u64 = 16;
@@ -101,7 +88,7 @@ fn sched_create(name: str, rip: u64, rsp: u64, cr3: u64, user: bool) -> u64 {
     }
     if id == MAX_THREADS { kpanic("sched: sin hilos libres"); }
 
-    let t = &threads[id];
+    let t = &mut threads[id];
     t.id = id;
     t.user = user;
     t.name = name;

@@ -1,0 +1,5 @@
+util: 50 rapido
+arrays: ABC 5 9 40 220
+tabla: 1 2 4 8
+varargs: 123
+asm: tsc crece=1 vendor=Gen dir!=0=1

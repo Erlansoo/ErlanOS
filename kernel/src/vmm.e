@@ -1,19 +1,11 @@
 // L1 — memoria virtual. Cada proceso tiene su PML4; la mitad superior (kernel,
 // HHDM) se comparte copiando las entradas 256..511 del PML4 de arranque.
 
-extern c "cpu.h" {
-    fn cpu_read_cr3() -> u64;
-    fn cpu_write_cr3(v: u64);
-    fn cpu_invlpg(va: u64);
-}
-extern c "pmm.h" {
-    fn pmm_alloc_page() -> u64;
-    fn pmm_free_page(phys: u64);
-    fn pmm_phys_to_virt(phys: u64) -> u64;
-}
-extern c "kmem.h" { fn kmemset(dst: u64, v: u8, n: u64); }
-extern c "serial.h" { fn kprintf(fmt: str, ...); }
-extern c "panic.h" { fn kpanic(msg: str); }
+import cpu;
+import pmm;
+import kmem;
+import serial;
+import panic;
 
 const PTE_PRESENT: u64 = 1;
 const PTE_WRITE: u64 = 2;
@@ -104,6 +96,15 @@ fn vmm_translate(cr3: u64, virt: u64) -> u64 {
     unsafe { e = t[(virt >> 12) & 511]; }
     if (e & PTE_PRESENT) == 0 { return 0; }
     return (e & PTE_ADDR_MASK) + (virt & 0xFFF);
+}
+
+// Mapea memoria física normal (cacheable) en su dirección del HHDM del kernel: para las
+// tablas ACPI, que viven en regiones que vmm_init no incluye.
+fn vmm_map_hhdm(phys: u64, pages: u64) {
+    let base = phys & 0xFFFFFFFFFFFFF000;
+    for i in 0..pages {
+        vmm_map(kernel_cr3, pmm_phys_to_virt(base + i * 4096), base + i * 4096, PTE_WRITE);
+    }
 }
 
 // Mapea un rango físico de dispositivo (MMIO) en la mitad de kernel, sin caché y

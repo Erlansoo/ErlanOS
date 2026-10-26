@@ -1,6 +1,6 @@
 // Reference M3 accumulation order, preserved for numeric/performance comparison.
-extern c "umath.h" { fn f16_to_f32(h: u16) -> f32; fn ld_u16(a: u64) -> u16; }
-extern c "platform.h" { fn platform_log(s: str); }
+import umath;
+import platform;
 const GGML_F32: u32 = 0;
 const GGML_F16: u32 = 1;
 const GGML_Q8_0: u32 = 8;

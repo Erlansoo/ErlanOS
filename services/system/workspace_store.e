@@ -1,10 +1,10 @@
 // D1 append-only workspace journal. Payload + tail are flushed before the commit
 // header. Existing records are never overwritten; an ambiguous failure seals the
 // mounted store read-only. Ring 0 exposes only this partition, through slot 12.
-extern c "usys.h" { fn usys(nr: u64,a: u64,b: u64,c: u64) -> u64; }
-extern c "ai_wire.h" { fn ai_get64(b: []u8,at: u64) -> u64; fn ai_put64(b: []u8,at: u64,v: u64); }
-extern c "document.h" { fn doc_text_valid(b: []u8,title: bool) -> bool; }
-extern c "ulib.h" { fn ulog(s: str) -> u64; fn ulog_num(s: str,n: u64); }
+import usys;
+import ai_wire;
+import document;
+import ulib;
 struct WsNode { parent: u64; kind: u64; length: u64; sector: u64; name_len: u64; name: [80]u8; }
 var ws_nodes: [129]WsNode;
 var ws_count: u64=0; var ws_tail: u64=8; var ws_sequence: u64=0;
@@ -48,7 +48,7 @@ fn ws_validate(id: u64,parent: u64,kind: u64,name: []u8,length: u64) -> bool {
     return parent<id; // creation order forbids cycles; moving is a separate future operation.
 }
 fn ws_accept(h: []u8,sector: u64) {
-    let id=ai_get64(h,24); let n=&ws_nodes[id];
+    let id=ai_get64(h,24); let n=&mut ws_nodes[id];
     n.parent=ai_get64(h,32); n.kind=ai_get64(h,40); n.length=ai_get64(h,48); n.sector=sector+1;
     n.name_len=ai_get64(h,56); ws_copy(n.name[..],h[64..64+n.name_len]);
     if id>ws_count { ws_count=id; } ws_sequence=ai_get64(h,16);
@@ -104,7 +104,7 @@ fn workspace_put(id: u64,parent: u64,kind: u64,name: []u8,data: []u8) -> u64 {
 }
 fn workspace_read(id: u64,out: []u8) -> u64 {
     ws_error=0; if id==0 || id>ws_count { ws_error=6; return 0; }
-    let n=&ws_nodes[id]; if n.length>out.len { ws_error=4; return 0; }
+    let n=&mut ws_nodes[id]; if n.length>out.len { ws_error=4; return 0; }
     if !ws_sector(1,n.sector-1,ws_header[..]) { ws_error=5; return 0; }
     let h=ws_header[..];
     if ai_get64(h,24)!=id || ai_get64(h,48)!=n.length || ai_get64(h,32)!=n.parent || ai_get64(h,40)!=n.kind { ws_error=5; return 0; }

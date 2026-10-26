@@ -1,5 +1,12 @@
 # GPU, internet y arranque físico
 
+> **Actualización 26/10/2026:** la GPU de esta PC es ahora una **NVIDIA GeForce RTX 3090**
+> (GA102, Ampere, PCI `10de:2204`), no la GTX 1050 Ti de esta evaluación. Los módulos abiertos
+> de NVIDIA (dual MIT/GPL-2.0) sí cubren Ampere, lo que cambia la sección «Decisión». El
+> inventario completo de hoy, los drivers que faltan, sus referencias abiertas con licencia y
+> el orden de portado están en [DRIVERS-ESTUDIO.md](DRIVERS-ESTUDIO.md). Además, ErlanOS ya
+> corre en VirtualBox en esta PC ([VIRTUALBOX.md](VIRTUALBOX.md)).
+
 Evaluación del 14 de septiembre de 2026. El usuario confirmó conservar el kernel
 propio. El arranque físico del diagnóstico G0 y la identificación PCI de GPU y
 Ethernet están confirmados en una [prueba con fotografía](PRUEBA-FISICA-G0.md).

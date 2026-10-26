@@ -6,31 +6,12 @@
 // La familia e1000e (82574L, I219-V) comparte el mapa de registros pero exige un
 // init de PHY/PCH distinto: aquí se detecta y se rechaza explícitamente, sin fingir.
 
-extern c "mmio.h" {
-    fn mmio_read32(a: u64) -> u32;
-    fn mmio_write32(a: u64, v: u32);
-    fn mmio_read64(a: u64) -> u64;
-    fn mmio_write64(a: u64, v: u64);
-    fn mmio_read16(a: u64) -> u16;
-    fn mmio_write16(a: u64, v: u16);
-    fn mmio_read8(a: u64) -> u8;
-    fn mmio_write8(a: u64, v: u8);
-    fn cpu_mfence();
-    fn cpu_pause();
-}
-extern c "pci.h" {
-    fn pci_nic_present() -> bool;
-    fn pci_nic_device() -> u64;
-    fn pci_nic_bar0() -> u64;
-    fn pci_nic_bus() -> u64;
-    fn pci_nic_slot() -> u64;
-    fn pci_nic_fn() -> u64;
-    fn pci_enable_bus_master(bus: u64, slot: u64, function: u64) -> u64;
-}
-extern c "pmm.h" { fn pmm_alloc_page() -> u64; fn pmm_phys_to_virt(phys: u64) -> u64; }
-extern c "vmm.h" { fn vmm_map_mmio(virt: u64, phys: u64, pages: u64); }
-extern c "kmem.h" { fn kmemcpy(dst: u64, src: u64, n: u64); fn kmemset(dst: u64, v: u8, n: u64); }
-extern c "serial.h" { fn kprintf(fmt: str, ...); }
+import mmio;
+import pci;
+import pmm;
+import vmm;
+import kmem;
+import serial;
 
 // Registros (offsets en BAR0)
 const REG_CTRL: u64 = 0x0000;

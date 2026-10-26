@@ -7,9 +7,14 @@
 #include "arena.h"
 #include "gguf.h"
 #include "llama.h"
+#include "umath.h"
 u64 numeric_cancel_after, numeric_cancel_polls;
 void erlan_panic(const char *s) { fprintf(stderr, "%s\n", s); abort(); }
 int main(int argc, char **argv) {
+#ifdef ERLAN_MATMUL_FORCE_PORTABLE
+    math_force_portable(true);   /* ruta sin AVX2 (antes, macro de umath.h) */
+#endif
+
     assert(argc == 4);
     FILE *f = fopen(argv[1], "rb"); assert(f);
     assert(fseek(f, 0, SEEK_END) == 0); long size = ftell(f); assert(size > 0); rewind(f);

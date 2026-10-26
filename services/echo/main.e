@@ -1,15 +1,7 @@
 // echo: segundo servicio de usuario (L2). Recibe mensajes por IPC y los registra.
 // También mantiene su propio estado SSE para detectar corrupción en el cambio de contexto.
 
-extern c "ulib.h" {
-    fn ulog(s: str) -> u64;
-    fn ulog_num(label: str, v: u64);
-    fn ulog_bytes(b: []u8) -> u64;
-    fn fmt_str(buf: []u8, pos: u64, s: str) -> u64;
-    fn uexit(code: u64);
-    fn uyield();
-    fn urecv(slot: u64, b: []u8) -> u64;
-}
+import ulib;
 
 fn main() {
     ulog("echo listo, esperando mensajes");

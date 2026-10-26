@@ -1,12 +1,6 @@
 // G0: human-readable report for the standalone hardware diagnostic image.
-extern c "console.h" { fn console_write(p: ptr<u8>, n: u64); }
-extern c "pci.h" {
-    fn pci_count() -> u64;
-    fn pci_target_gpu_count() -> u64;
-    fn pci_target_nic_count() -> u64;
-    fn pci_display_count() -> u64;
-    fn pci_network_count() -> u64;
-}
+import console;
+import pci;
 
 fn hardware_text(s: str) {
     var n: u64 = 0;
@@ -32,7 +26,8 @@ fn hardware_report() {
     hardware_text("Funciones detectadas: "); hardware_number(pci_count());
     hardware_text("\nDispositivos de pantalla: "); hardware_number(pci_display_count());
     hardware_text("\nDispositivos de red: "); hardware_number(pci_network_count());
-    hardware_text("\n\nGTX 1050 Ti (10de:1c82): ");
+
+    hardware_text("\n\nGPU NVIDIA (10de:1c82 GTX 1050 Ti o 10de:2204 RTX 3090): ");
     if pci_target_gpu_count() > 0 { hardware_text("detectada"); }
     else { hardware_text("no detectada"); }
     hardware_text("\nIntel I219-V (8086:15b8): ");
